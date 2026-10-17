@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "engine": "fake",
+  "lines": [
+    {
+      "id": 0,
+      "text": "| Das Vorstel-",
+      "box": {
+        "x": 0.02,
+        "y": 0.1,
+        "w": 0.48,
+        "h": 0.03
+      },
+      "boxIds": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": 1,
+      "text": "lungskraft war",
+      "box": {
+        "x": 0.1,
+        "y": 0.14,
+        "w": 0.45,
+        "h": 0.03
+      },
+      "boxIds": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": 2,
+      "text": "groß.",
+      "box": {
+        "x": 0.1,
+        "y": 0.18,
+        "w": 0.1,
+        "h": 0.03
+      },
+      "boxIds": [
+        5
+      ]
+    }
+  ],
+  "boxes": [
+    {
+      "id": 1,
+      "raw": "Das",
+      "lineId": 0,
+      "conf": 0.99,
+      "box": {
+        "x": 0.1,
+        "y": 0.1,
+        "w": 0.1,
+        "h": 0.03
+      },
+      "wordId": 1
+    },
+    {
+      "id": 2,
+      "raw": "Vorstel-",
+      "lineId": 0,
+      "conf": 0.99,
+      "box": {
+        "x": 0.3,
+        "y": 0.1,
+        "w": 0.2,
+        "h": 0.03
+      },
+      "wordId": 2
+    },
+    {
+      "id": 3,
+      "raw": "lungskraft",
+      "lineId": 1,
+      "conf": 0.98,
+      "box": {
+        "x": 0.1,
+        "y": 0.14,
+        "w": 0.3,
+        "h": 0.03
+      },
+      "wordId": 2
+    },
+    {
+      "id": 4,
+      "raw": "war",
+      "lineId": 1,
+      "conf": 0.97,
+      "box": {
+        "x": 0.45,
+        "y": 0.14,
+        "w": 0.1,
+        "h": 0.03
+      },
+      "wordId": 4
+    },
+    {
+      "id": 5,
+      "raw": "groß.",
+      "lineId": 2,
+      "conf": 0.96,
+      "box": {
+        "x": 0.1,
+        "y": 0.18,
+        "w": 0.1,
+        "h": 0.03
+      },
+      "wordId": 5
+    }
+  ],
+  "words": [
+    {
+      "id": 1,
+      "text": "Das",
+      "boxIds": [
+        1
+      ],
+      "lineIds": [
+        0
+      ]
+    },
+    {
+      "id": 2,
+      "text": "Vorstellungskraft",
+      "boxIds": [
+        2,
+        3
+      ],
+      "lineIds": [
+        0,
+        1
+      ]
+    },
+    {
+      "id": 4,
+      "text": "war",
+      "boxIds": [
+        4
+      ],
+      "lineIds": [
+        1
+      ]
+    },
+    {
+      "id": 5,
+      "text": "groß",
+      "boxIds": [
+        5
+      ],
+      "lineIds": [
+        2
+      ]
+    }
+  ]
+}

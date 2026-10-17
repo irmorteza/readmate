@@ -1,0 +1,169 @@
+{
+  "Blocks": [
+    {
+      "BlockType": "PAGE",
+      "Id": "p",
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0,
+          "Top": 0,
+          "Width": 1,
+          "Height": 1
+        }
+      }
+    },
+    {
+      "BlockType": "LINE",
+      "Id": "l0",
+      "Text": "| Das Vorstel-",
+      "Confidence": 98.0,
+      "Relationships": [
+        {
+          "Type": "CHILD",
+          "Ids": [
+            "w1",
+            "w2",
+            "w3"
+          ]
+        }
+      ],
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0.02,
+          "Top": 0.1,
+          "Width": 0.48,
+          "Height": 0.03
+        }
+      }
+    },
+    {
+      "BlockType": "WORD",
+      "Id": "w1",
+      "Text": "|",
+      "Confidence": 99.0,
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0.02,
+          "Top": 0.1,
+          "Width": 0.02,
+          "Height": 0.03
+        }
+      }
+    },
+    {
+      "BlockType": "WORD",
+      "Id": "w2",
+      "Text": "Das",
+      "Confidence": 99.0,
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0.1,
+          "Top": 0.1,
+          "Width": 0.1,
+          "Height": 0.03
+        }
+      }
+    },
+    {
+      "BlockType": "WORD",
+      "Id": "w3",
+      "Text": "Vorstel-",
+      "Confidence": 99.0,
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0.3,
+          "Top": 0.1,
+          "Width": 0.2,
+          "Height": 0.03
+        }
+      }
+    },
+    {
+      "BlockType": "LINE",
+      "Id": "l1",
+      "Text": "lungskraft war",
+      "Confidence": 98.0,
+      "Relationships": [
+        {
+          "Type": "CHILD",
+          "Ids": [
+            "w4",
+            "w5"
+          ]
+        }
+      ],
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0.1,
+          "Top": 0.14,
+          "Width": 0.45,
+          "Height": 0.03
+        }
+      }
+    },
+    {
+      "BlockType": "WORD",
+      "Id": "w4",
+      "Text": "lungskraft",
+      "Confidence": 98.0,
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0.1,
+          "Top": 0.14,
+          "Width": 0.3,
+          "Height": 0.03
+        }
+      }
+    },
+    {
+      "BlockType": "WORD",
+      "Id": "w5",
+      "Text": "war",
+      "Confidence": 97.0,
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0.45,
+          "Top": 0.14,
+          "Width": 0.1,
+          "Height": 0.03
+        }
+      }
+    },
+    {
+      "BlockType": "LINE",
+      "Id": "l2",
+      "Text": "groß.",
+      "Confidence": 98.0,
+      "Relationships": [
+        {
+          "Type": "CHILD",
+          "Ids": [
+            "w6"
+          ]
+        }
+      ],
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0.1,
+          "Top": 0.18,
+          "Width": 0.1,
+          "Height": 0.03
+        }
+      }
+    },
+    {
+      "BlockType": "WORD",
+      "Id": "w6",
+      "Text": "groß.",
+      "Confidence": 96.0,
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0.1,
+          "Top": 0.18,
+          "Width": 0.1,
+          "Height": 0.03
+        }
+      }
+    }
+  ]
+}
