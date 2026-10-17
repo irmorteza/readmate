@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://worttap.local/ocr-result.schema.json",
+  "title": "OcrResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "engine", "lines", "boxes", "words"],
+  "properties": {
+    "version": { "const": 1 },
+    "engine": { "type": "string" },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "text", "box", "boxIds"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 0 },
+          "text": { "type": "string" },
+          "box": { "$ref": "#/$defs/box" },
+          "boxIds": { "type": "array", "items": { "type": "integer", "minimum": 0 } }
+        }
+      }
+    },
+    "boxes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "raw", "lineId", "conf", "box", "wordId"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 0 },
+          "raw": { "type": "string" },
+          "lineId": { "type": "integer", "minimum": 0 },
+          "conf": { "type": "number", "minimum": 0, "maximum": 1 },
+          "box": { "$ref": "#/$defs/box" },
+          "wordId": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "words": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "text", "boxIds", "lineIds"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 0 },
+          "text": { "type": "string" },
+          "boxIds": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+          "lineIds": { "type": "array", "items": { "type": "integer", "minimum": 0 } }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "box": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "w", "h"],
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 },
+        "w": { "type": "number", "minimum": 0, "maximum": 1 },
+        "h": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  }
+}
