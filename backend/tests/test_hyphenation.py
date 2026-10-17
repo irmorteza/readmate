@@ -135,3 +135,25 @@ def test_four_reference_pairs_on_synthetic_lines():
     texts = word_texts(merge_hyphenated(r))
     for expected in ["angehaltenem", "aufzufangen", "Details", "Vorstellungskraft"]:
         assert expected in texts
+
+
+def test_suspended_hyphen_before_conjunction_not_merged():
+    for stem, rest in [("Vor-", "und"), ("Bus-", "und"), ("Ein-", "oder"), ("Ein-", "Und")]:
+        r = make_result(
+            [
+                [("Die", bx(0.1, 0.1)), (stem, bx(0.3, 0.1))],
+                [(rest, bx(0.1, 0.14)), ("Nachteile", bx(0.3, 0.14))],
+            ]
+        )
+        assert merge_hyphenated(r) == r, (stem, rest)
+
+
+def test_first_surviving_box_far_from_line_start_not_merged():
+    r = make_result(
+        [
+            [("Das", bx(0.1, 0.1)), ("Vorstel-", bx(0.3, 0.1))],
+            [("war", bx(0.5, 0.14))],
+        ]
+    )
+    r["lines"][1]["box"] = {"x": 0.1, "y": 0.14, "w": 0.5, "h": 0.03}  # real first box was dropped
+    assert merge_hyphenated(r) == r

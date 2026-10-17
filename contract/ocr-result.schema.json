@@ -16,7 +16,10 @@
         "required": ["id", "text", "box", "boxIds"],
         "properties": {
           "id": { "type": "integer", "minimum": 0 },
-          "text": { "type": "string" },
+          "text": {
+            "type": "string",
+            "description": "Unfiltered engine text of the line: may include characters whose boxes were dropped as noise, and a hyphen-broken line is not rejoined. Use words[] for cleaned text."
+          },
           "box": { "$ref": "#/$defs/box" },
           "boxIds": { "type": "array", "items": { "type": "integer", "minimum": 0 } }
         }

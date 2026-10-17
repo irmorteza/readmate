@@ -103,6 +103,12 @@ def handler(event: dict, context: object) -> dict:
         return _response(200, result)
     except Exception as exc:
         status, code, message = map_error(exc)
-        log = logger.warning if status < 500 else logger.error
-        log("error request_id=%s code=%s type=%s", request_id, code, type(exc).__name__)
+        logger.log(
+            logging.WARNING if status < 500 else logging.ERROR,
+            "error request_id=%s code=%s type=%s",
+            request_id,
+            code,
+            type(exc).__name__,
+            exc_info=exc if status >= 500 else None,
+        )
         return _response(status, {"error": {"code": code, "message": message}})

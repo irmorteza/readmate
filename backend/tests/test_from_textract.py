@@ -42,3 +42,44 @@ def test_ignores_other_block_types():
 
 def test_response_without_lines_gives_empty_page():
     assert from_textract({"Blocks": []}) == {"lines": []}
+
+
+def _response_with_word_box(box: dict) -> dict:
+    return {
+        "Blocks": [
+            {
+                "BlockType": "LINE",
+                "Id": "l",
+                "Text": "Rand",
+                "Confidence": 99.0,
+                "Relationships": [{"Type": "CHILD", "Ids": ["w"]}],
+                "Geometry": {"BoundingBox": box},
+            },
+            {
+                "BlockType": "WORD",
+                "Id": "w",
+                "Text": "Rand",
+                "Confidence": 99.0,
+                "Geometry": {"BoundingBox": box},
+            },
+        ]
+    }
+
+
+def test_negative_left_edge_is_clamped_into_0_1():
+    page = from_textract(
+        _response_with_word_box({"Left": -0.001, "Top": 0.1, "Width": 0.2, "Height": 0.05})
+    )
+    box = page["lines"][0]["words"][0]["box"]
+    assert box["x"] == 0.0
+    assert abs(box["w"] - 0.199) < 1e-9
+
+
+def test_box_running_past_right_and_bottom_edge_is_clamped():
+    page = from_textract(
+        _response_with_word_box({"Left": 0.95, "Top": 0.98, "Width": 0.1, "Height": 0.05})
+    )
+    box = page["lines"][0]["words"][0]["box"]
+    assert box["x"] == 0.95 and box["y"] == 0.98
+    assert abs(box["w"] - 0.05) < 1e-9 and abs(box["h"] - 0.02) < 1e-9
+    assert all(0 <= v <= 1 for v in box.values())

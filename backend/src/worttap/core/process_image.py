@@ -6,6 +6,6 @@ from worttap.pipeline.types import OcrResult
 
 
 def process_image(image_bytes: bytes, engine: OcrEngine) -> OcrResult:
-    result = filter_noise(merge_hyphenated(normalize(engine.recognize(image_bytes))))
+    result = merge_hyphenated(filter_noise(normalize(engine.recognize(image_bytes))))
     result["engine"] = engine.name
     return result

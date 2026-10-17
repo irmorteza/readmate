@@ -7,6 +7,8 @@ from worttap.pipeline.types import OcrLine, OcrResult
 _BROKEN_WORD = re.compile(r"[^\W\d_]-$")
 _MIN_OVERLAP = 0.5
 _MAX_GAP_IN_LINE_HEIGHTS = 1.5
+# "Vor- und Nachteile": a hyphen before one of these is a suspended hyphen, not a line break.
+_CONJUNCTIONS = {"und", "oder", "bis", "sowie", "bzw", "wie", "als"}
 
 
 def _find_next_line(line: OcrLine, lines: list[OcrLine]) -> OcrLine | None:
@@ -47,6 +49,12 @@ def merge_hyphenated(result: OcrResult) -> OcrResult:
             continue
         first = boxes[nxt["boxIds"][0]]
         if first["id"] in consumed or not first["raw"][:1].isalpha():
+            continue
+        if clean_word(first["raw"]).lower() in _CONJUNCTIONS:
+            continue
+        # The line's real first box may have been filtered out as noise; then `first` is a
+        # later word and must not be glued to the stem.
+        if first["box"]["x"] - nxt["box"]["x"] > nxt["box"]["h"]:
             continue
         stem = last["raw"] if not first["raw"][0].islower() else last["raw"][:-1]
         word = words[last["wordId"]]

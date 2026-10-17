@@ -67,3 +67,48 @@ def test_reference_page_hyphen_pairs_merge():
     texts = [w["text"] for w in out["words"]]
     for expected in ["angehaltenem", "aufzufangen", "Details", "Vorstellungskraft"]:
         assert expected in texts
+
+
+def _page_with_conf(lines, confs):
+    """raw_page plus per-word confidences keyed by raw text."""
+    page = raw_page(lines)
+    for line in page["lines"]:
+        for w in line["words"]:
+            w["conf"] = confs.get(w["text"], w["conf"])
+    return page
+
+
+def test_low_confidence_speck_before_continuation_does_not_corrupt_merge():
+    page = _page_with_conf(
+        [
+            [("Das", bx(0.1, 0.10)), ("Vorstel-", bx(0.3, 0.10))],
+            [("i", bx(0.08, 0.14)), ("lungskraft", bx(0.1, 0.14))],
+        ],
+        {"i": 0.2},
+    )
+    texts = [w["text"] for w in process_image(b"", StubEngine(page))["words"]]
+    assert "Vorstellungskraft" in texts and "Vorsteli" not in texts
+
+
+def test_misread_low_confidence_first_half_is_not_merged_into_word():
+    page = _page_with_conf(
+        [
+            [("Das", bx(0.1, 0.10)), ("Vorstel-", bx(0.3, 0.10))],
+            [("luugskraft", bx(0.1, 0.14)), ("war", bx(0.5, 0.14))],
+        ],
+        {"luugskraft": 0.3},
+    )
+    texts = [w["text"] for w in process_image(b"", StubEngine(page))["words"]]
+    assert "Vorstel-" in texts and "Vorstelluugskraft" not in texts
+
+
+def test_speck_line_between_lines_does_not_block_merge():
+    page = raw_page(
+        [
+            [("Das", bx(0.1, 0.10)), ("Vorstel-", bx(0.3, 0.10))],
+            [(".", bx(0.15, 0.125, w=0.01, h=0.005))],
+            [("lungskraft", bx(0.1, 0.14))],
+        ]
+    )
+    texts = [w["text"] for w in process_image(b"", StubEngine(page))["words"]]
+    assert "Vorstellungskraft" in texts

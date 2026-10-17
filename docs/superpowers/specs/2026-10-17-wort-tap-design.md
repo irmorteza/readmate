@@ -54,8 +54,8 @@ capture → resize (≤2000px JPEG)
                                            ├─ engine.recognize(bytes) ──► Textract
                                            │    (adapter → RawPage)
                                            ├─ normalize
-                                           ├─ merge_hyphenated
-                                           └─ filter_noise
+                                           ├─ filter_noise
+                                           └─ merge_hyphenated   (runs after filter_noise, v3)
         ◄─────────────── JSON  ◄──── OcrResult (normalized 0–1 coords)
 render <img> + % positioned boxes
 tap → select word → onWordSelected (Phase 2 hook)
@@ -153,6 +153,8 @@ Use `LINE` blocks in the order returned; resolve each line's `WORD` children thr
 Assign ids; one `box` and one `word` per recognized word. `word.text` = `raw` with leading/trailing punctuation stripped (`, . ; : ! ? » « „ “ ” " ' ( ) [ ]` and typographic quotes) using `str.strip` with an explicit character set. Inner hyphens and apostrophes stay.
 
 ### 6.3 `merge_hyphenated(result) -> OcrResult`
+
+*Stage order (v3, after backend review): the pipeline runs `normalize` → `filter_noise` → `merge_hyphenated`, so noise specks cannot become the continuation or block a merge. Added rules: no merge if the continuation (cleaned, lower-cased) is one of `und, oder, bis, sowie, bzw, wie, als` (suspended hyphen: "Vor- und Nachteile"); no merge if the continuation box starts further than one line height from its line's left edge (the line's real first box was filtered out). Textract box geometry is clamped to 0–1.*
 
 For each line L whose **last** box raw text matches `re.compile(r"[^\W\d_]-$")` (a Unicode letter followed by ASCII hyphen; en/em dashes and a lone `-` never qualify):
 

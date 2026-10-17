@@ -169,3 +169,17 @@ def test_logs_never_contain_token_or_image_bytes(caplog):
     assert TOKEN not in caplog.text
     assert "SECRETIMAGEBYTES" not in caplog.text
     assert base64.b64encode(b"\xff\xd8SECRETIMAGEBYTES").decode() not in caplog.text
+
+
+def test_unexpected_error_is_logged_with_traceback_but_client_error_is_not(monkeypatch, caplog):
+    def boom(*args, **kwargs):
+        raise RuntimeError("kaboom")
+
+    monkeypatch.setattr(handler_module, "process_image", boom)
+    caplog.set_level(logging.INFO)
+    call(make_event())
+    assert any(r.exc_info and r.levelno >= logging.ERROR for r in caplog.records)
+    assert TOKEN not in caplog.text
+    caplog.clear()
+    call(make_event(token="nope"))
+    assert not any(r.exc_info for r in caplog.records)

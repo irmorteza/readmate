@@ -8,9 +8,20 @@ from worttap.pipeline.types import Box, RawLine, RawPage, RawWord
 _client = boto3.client("textract")
 
 
+def _clamp_axis(start: float, size: float) -> tuple[float, float]:
+    """Keep an interval inside 0-1; Textract can report boxes slightly outside the image."""
+    end = start + size
+    if start >= 0 and end <= 1 + 1e-9:
+        return start, size
+    start_c = min(max(start, 0.0), 1.0)
+    return start_c, min(max(end, 0.0), 1.0) - start_c
+
+
 def _box(block: dict) -> Box:
     bb = block["Geometry"]["BoundingBox"]
-    return {"x": bb["Left"], "y": bb["Top"], "w": bb["Width"], "h": bb["Height"]}
+    x, w = _clamp_axis(bb["Left"], bb["Width"])
+    y, h = _clamp_axis(bb["Top"], bb["Height"])
+    return {"x": x, "y": y, "w": w, "h": h}
 
 
 def from_textract(response: dict) -> RawPage:
