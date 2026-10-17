@@ -52,9 +52,12 @@ def merge_hyphenated(result: OcrResult) -> OcrResult:
             continue
         if clean_word(first["raw"]).lower() in _CONJUNCTIONS:
             continue
-        # The line's real first box may have been filtered out as noise; then `first` is a
-        # later word and must not be glued to the stem.
-        if first["box"]["x"] - nxt["box"]["x"] > nxt["box"]["h"]:
+        # The continuation line's real first box may have been filtered out as noise; then
+        # `first` is a later word and must not be glued to the stem. Measure against the stem
+        # line's first kept box (the column's left edge): the engine's LINE box still spans
+        # dropped glyphs such as a gutter bar, so it would misjudge a good continuation.
+        column_left = boxes[line["boxIds"][0]]["box"]["x"]
+        if first["box"]["x"] - column_left > nxt["box"]["h"]:
             continue
         stem = last["raw"] if not first["raw"][0].islower() else last["raw"][:-1]
         word = words[last["wordId"]]

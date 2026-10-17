@@ -112,3 +112,19 @@ def test_speck_line_between_lines_does_not_block_merge():
     )
     texts = [w["text"] for w in process_image(b"", StubEngine(page))["words"]]
     assert "Vorstellungskraft" in texts
+
+
+def test_noise_glyph_left_of_continuation_does_not_block_merge():
+    # The engine's LINE box still spans the dropped "|", so the indent check must not use it.
+    page = raw_page(
+        [
+            [("Das", bx(0.10, 0.10)), ("Vorstel-", bx(0.30, 0.10))],
+            [
+                ("|", bx(0.02, 0.14, w=0.01)),
+                ("lungskraft", bx(0.10, 0.14)),
+                ("war", bx(0.45, 0.14)),
+            ],
+        ]
+    )
+    texts = [w["text"] for w in process_image(b"", StubEngine(page))["words"]]
+    assert "Vorstellungskraft" in texts
