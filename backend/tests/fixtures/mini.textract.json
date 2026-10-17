@@ -1,0 +1,22 @@
+{
+  "Blocks": [
+    {"BlockType": "PAGE", "Id": "p1", "Relationships": [{"Type": "CHILD", "Ids": ["l1", "l2"]}],
+     "Geometry": {"BoundingBox": {"Left": 0, "Top": 0, "Width": 1, "Height": 1}}},
+    {"BlockType": "LINE", "Id": "l1", "Text": "Er hatte,", "Confidence": 99.0,
+     "Relationships": [{"Type": "CHILD", "Ids": ["w1", "w2"]}],
+     "Geometry": {"BoundingBox": {"Left": 0.1, "Top": 0.1, "Width": 0.4, "Height": 0.05}}},
+    {"BlockType": "WORD", "Id": "w1", "Text": "Er", "Confidence": 99.5,
+     "Geometry": {"BoundingBox": {"Left": 0.1, "Top": 0.1, "Width": 0.1, "Height": 0.05}}},
+    {"BlockType": "WORD", "Id": "w2", "Text": "hatte,", "Confidence": 98.25,
+     "Geometry": {"BoundingBox": {"Left": 0.25, "Top": 0.1, "Width": 0.25, "Height": 0.05}}},
+    {"BlockType": "WORD", "Id": "w3", "Text": "eine", "Confidence": 97.0,
+     "Geometry": {"BoundingBox": {"Left": 0.1, "Top": 0.2, "Width": 0.15, "Height": 0.05}}},
+    {"BlockType": "WORD", "Id": "w4", "Text": "Idee", "Confidence": 96.0,
+     "Geometry": {"BoundingBox": {"Left": 0.3, "Top": 0.2, "Width": 0.15, "Height": 0.05}}},
+    {"BlockType": "LINE", "Id": "l2", "Text": "eine Idee", "Confidence": 96.5,
+     "Relationships": [{"Type": "CHILD", "Ids": ["w3", "w4"]}],
+     "Geometry": {"BoundingBox": {"Left": 0.1, "Top": 0.2, "Width": 0.35, "Height": 0.05}}},
+    {"BlockType": "SELECTION_ELEMENT", "Id": "s1", "Confidence": 90.0,
+     "Geometry": {"BoundingBox": {"Left": 0.8, "Top": 0.8, "Width": 0.02, "Height": 0.02}}}
+  ]
+}
