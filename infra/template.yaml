@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: WortTap backend - Textract OCR behind a Lambda Function URL
+
+Parameters:
+  PilotToken:
+    Type: String
+    NoEcho: true
+    MinLength: 16
+    Description: Shared secret sent by the app in the X-Pilot-Token header.
+  FrontendOrigin:
+    Type: String
+    Description: Origin of the deployed PWA, e.g. https://main.xxxx.amplifyapp.com (no trailing slash).
+  AlertEmail:
+    Type: String
+    Description: Address that receives the budget alerts.
+  OcrEngine:
+    Type: String
+    Default: textract
+    AllowedValues: [textract] # "fake" needs test fixtures that are not part of the deployed package
+
+Resources:
+  OcrFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-ocr"
+      Runtime: python3.13
+      Architectures: [arm64]
+      MemorySize: 512
+      Timeout: 15
+      CodeUri: ../backend/src
+      Handler: worttap.handler.handler
+      # Caveat: new accounts can have an account-wide concurrency limit too low to reserve any.
+      # If `sam deploy` fails on this line, remove it and rely on the token + budget alarm.
+      ReservedConcurrentExecutions: 2
+      Environment:
+        Variables:
+          PILOT_TOKEN: !Ref PilotToken
+          OCR_ENGINE: !Ref OcrEngine
+      LoggingConfig:
+        LogGroup: !Ref OcrLogGroup
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: textract:DetectDocumentText
+              Resource: "*"
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - !Ref FrontendOrigin
+            - http://localhost:5173
+          AllowMethods: [POST]
+          AllowHeaders: [content-type, x-pilot-token]
+          MaxAge: 600
+
+  OcrLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-ocr"
+      RetentionInDays: 14
+
+  MonthlyBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: !Sub "${AWS::StackName}-monthly"
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: 5
+          Unit: USD
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref AlertEmail
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref AlertEmail
+
+Outputs:
+  FunctionUrl:
+    Description: Set this as VITE_API_URL when building the frontend.
+    Value: !GetAtt OcrFunctionUrl.FunctionUrl
