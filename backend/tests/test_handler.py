@@ -183,3 +183,30 @@ def test_unexpected_error_is_logged_with_traceback_but_client_error_is_not(monke
     caplog.clear()
     call(make_event(token="nope"))
     assert not any(r.exc_info for r in caplog.records)
+
+
+def assert_unauthorized(event):
+    status, body = call(event)
+    assert status == 401 and body["error"]["code"] == "UNAUTHORIZED"
+
+
+def test_wrong_token_with_empty_body_is_401():
+    assert_unauthorized(make_event(body=b"", token="nope"))
+
+
+def test_wrong_token_with_invalid_base64_is_401():
+    event = make_event(token="nope")
+    event["body"] = "!!!not base64!!!"
+    assert_unauthorized(event)
+
+
+def test_wrong_token_with_wrong_content_type_is_401():
+    assert_unauthorized(make_event(token="nope", content_type="text/plain"))
+
+
+def test_wrong_token_with_oversized_body_is_401():
+    assert_unauthorized(make_event(body=b"\xff" * (MAX_BYTES + 1), token="nope"))
+
+
+def test_missing_token_with_none_body_is_401():
+    assert_unauthorized(make_event(body=None, token=None))
