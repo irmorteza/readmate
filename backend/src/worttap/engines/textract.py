@@ -1,6 +1,11 @@
 """Amazon Textract adapter: converts a DetectDocumentText response to a RawPage."""
 
+import boto3
+
 from worttap.pipeline.types import Box, RawLine, RawPage, RawWord
+
+# Created once at import so warm Lambda invocations reuse the connection.
+_client = boto3.client("textract")
 
 
 def _box(block: dict) -> Box:
@@ -38,3 +43,11 @@ def from_textract(response: dict) -> RawPage:
             }
         )
     return {"lines": lines}
+
+
+class TextractEngine:
+    name = "textract"
+
+    def recognize(self, image_bytes: bytes) -> RawPage:
+        response = _client.detect_document_text(Document={"Bytes": image_bytes})
+        return from_textract(response)
