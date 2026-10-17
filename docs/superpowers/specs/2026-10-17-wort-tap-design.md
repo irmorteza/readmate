@@ -230,7 +230,7 @@ For capture testing from the phone before deployment, run the Vite dev server wi
 
 ## 10. Infrastructure (`infra/template.yaml`, AWS SAM)
 
-- **Function:** Python runtime (python3.13 or newer), arm64, 512 MB, timeout 15 s, `Handler: worttap.handler.handler`, `CodeUri: ../backend/src`, dependencies from `backend/requirements.txt` (pin `boto3` explicitly rather than relying on the runtime's bundled copy).
+- **Function:** Python runtime (python3.13 or newer), arm64, 512 MB, timeout 15 s, `Handler: worttap.handler.handler`, `CodeUri: ../backend/src`, dependencies from `backend/src/requirements.txt` (`sam build` reads it from `CodeUri`) (pin `boto3` explicitly rather than relying on the runtime's bundled copy).
 - **Function URL:** `AuthType: NONE`; CORS `AllowOrigins` = `[FrontendOrigin, "http://localhost:5173"]`, `AllowMethods: [POST]`, `AllowHeaders: [content-type, x-pilot-token]`, `MaxAge: 600`.
 - **IAM:** execution role with only `textract:DetectDocumentText` plus basic logging.
 - **Concurrency:** `ReservedConcurrentExecutions: 2`. *Caveat:* new accounts can have an account-wide concurrency limit too low to reserve any; if `sam deploy` fails on this, remove the setting and rely on the token + budget alarm.
