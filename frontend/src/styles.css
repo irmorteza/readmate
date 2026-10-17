@@ -1,0 +1,120 @@
+:root {
+  color-scheme: light dark;
+  --bg: #fafafa;
+  --fg: #1c1c1e;
+  --accent: #2563eb;
+  --highlight: rgba(37, 99, 235, 0.35);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111;
+    --fg: #f2f2f2;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.4 system-ui, sans-serif;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+.screen {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.screen.result {
+  padding: 0;
+  height: 100dvh;
+  gap: 0;
+}
+button,
+input[type="password"] {
+  font: inherit;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #8884;
+  background: transparent;
+  color: inherit;
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.error {
+  color: #dc2626;
+  font-weight: 600;
+}
+.preview {
+  max-width: 100%;
+  opacity: 0.6;
+}
+.hint {
+  font-size: 14px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+}
+.toolbar button {
+  padding: 8px 12px;
+}
+.stage-host {
+  flex: 1;
+  min-height: 0;
+}
+.overlay-scroll {
+  height: 100%;
+  overflow: auto;
+}
+.overlay-stage {
+  position: relative;
+}
+.overlay-stage img {
+  display: block;
+  width: 100%;
+}
+.box {
+  position: absolute;
+  box-sizing: content-box;
+  border: 2px solid transparent;
+  margin: -2px 0 0 -2px;
+  background-clip: padding-box;
+  cursor: pointer;
+}
+.overlay-stage.outlines .box {
+  outline: 1px solid rgba(220, 38, 38, 0.6);
+  outline-offset: -2px;
+}
+.box.selected {
+  background-color: var(--highlight);
+}
+.sheet {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid #8884;
+  background: var(--bg);
+}
+.sheet[hidden] {
+  display: none;
+}
+.menu summary {
+  cursor: pointer;
+}
