@@ -30,9 +30,8 @@ Resources:
       Timeout: 15
       CodeUri: ../backend/src
       Handler: worttap.handler.handler
-      # Caveat: new accounts can have an account-wide concurrency limit too low to reserve any.
-      # If `sam deploy` fails on this line, remove it and rely on the token + budget alarm.
-      ReservedConcurrentExecutions: 2
+      # No ReservedConcurrentExecutions: this account's concurrency limit (10) is too low to
+      # reserve any. Abuse protection is the token plus the budget alarm below.
       Environment:
         Variables:
           PILOT_TOKEN: !Ref PilotToken

@@ -233,7 +233,7 @@ For capture testing from the phone before deployment, run the Vite dev server wi
 - **Function:** Python runtime (python3.13 or newer), arm64, 512 MB, timeout 15 s, `Handler: worttap.handler.handler`, `CodeUri: ../backend/src`, dependencies from `backend/src/requirements.txt` (`sam build` reads it from `CodeUri`) (pin `boto3` explicitly rather than relying on the runtime's bundled copy).
 - **Function URL:** `AuthType: NONE`; CORS `AllowOrigins` = `[FrontendOrigin, "http://localhost:5173"]`, `AllowMethods: [POST]`, `AllowHeaders: [content-type, x-pilot-token]`, `MaxAge: 600`.
 - **IAM:** execution role with only `textract:DetectDocumentText` plus basic logging.
-- **Concurrency:** `ReservedConcurrentExecutions: 2`. *Caveat:* new accounts can have an account-wide concurrency limit too low to reserve any; if `sam deploy` fails on this, remove the setting and rely on the token + budget alarm.
+- **Concurrency:** no reserved concurrency. The owner's account-wide limit is 10, too low to reserve any (`sam deploy` failed on `ReservedConcurrentExecutions: 2`), so abuse protection is the token + budget alarm.
 - **Logs:** explicit log group, 14-day retention. Log (with the standard `logging` module) request id, duration, box/word counts and error codes; **never** log image bytes or the token.
 - **Budget:** `AWS::Budgets::Budget`, monthly $5 cost limit, email alert at 80 % and 100 %.
 - **Parameters:** `PilotToken` (`NoEcho`), `FrontendOrigin`, `AlertEmail`, `OcrEngine` (default `textract`).
@@ -299,5 +299,5 @@ Local setup: a virtual environment in `backend/.venv` (`python -m venv .venv`, t
 | Hyphen heuristic mis-merges in multi-column layouts | Column-overlap rule (§6.3) + newspaper fixture test. |
 | Frontend and backend contract drift (two languages) | JSON Schema + golden `example.json` tested on both sides (§9). |
 | Words too small to tap | Zoom levels + padded hit area (§7). |
-| Public Function URL abused | Token, reserved concurrency, $5 budget alert. |
+| Public Function URL abused | Token and $5 budget alert (no reserved concurrency: account limit is 10). |
 | Token visible to anyone with the phone | Acceptable for a personal pilot; Cognito if users are added. |

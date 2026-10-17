@@ -6,7 +6,7 @@ Fill this in while working through the deployment and the manual device checklis
 ## Deployment record
 
 - [ ] Token generated: `python -c "import secrets; print(secrets.token_hex(32))"` (do not paste it here)
-- [ ] `sam build && sam deploy --guided` in `eu-central-1` (reserved concurrency accepted, or removed — note which): ____
+- [ ] `sam build && sam deploy --guided` in `eu-central-1` (reserved concurrency removed: account limit is 10): ____
 - [ ] Function URL: ____
 - [ ] Frontend deployed to Amplify Hosting with `VITE_API_URL` = Function URL; site URL: ____
 - [ ] SAM re-deployed with `FrontendOrigin` = site URL
