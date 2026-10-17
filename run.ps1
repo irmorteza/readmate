@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Runs WortTap locally: backend dev server + Vite dev server. Ctrl+C stops both.
+  Runs ReadMate locally: backend dev server + Vite dev server. Ctrl+C stops both.
 
 .EXAMPLE
   .\run.ps1                      # real Textract (uses your AWS credentials), token "dev"

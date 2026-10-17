@@ -4,8 +4,8 @@ from pathlib import Path
 
 import jsonschema
 
-from worttap.core.process_image import process_image
-from worttap.engines.fake import FakeEngine
+from readmate.core.process_image import process_image
+from readmate.engines.fake import FakeEngine
 
 CONTRACT = Path(__file__).resolve().parents[2] / "contract"
 FIXTURE = Path(__file__).parent / "fixtures" / "golden.textract.json"

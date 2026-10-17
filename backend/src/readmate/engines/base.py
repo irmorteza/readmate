@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from worttap.pipeline.types import RawPage
+from readmate.pipeline.types import RawPage
 
 
 class OcrEngine(Protocol):

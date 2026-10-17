@@ -19,8 +19,8 @@ export default defineConfig(({ mode }) => {
         registerType: "autoUpdate",
         includeAssets: ["icons/apple-touch-icon-180.png"],
         manifest: {
-          name: "WortTap",
-          short_name: "WortTap",
+          name: "ReadMate",
+          short_name: "ReadMate",
           description: "Tap any word on a photographed German page.",
           display: "standalone",
           start_url: "/",

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from worttap.engines.textract import from_textract
+from readmate.engines.textract import from_textract
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

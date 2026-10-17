@@ -1,3 +1,5 @@
+> Project renamed to ReadMate on 2026-10-18.
+
 # WortTap — Design Spec (Pilot)
 
 - **Date:** 2026-10-17

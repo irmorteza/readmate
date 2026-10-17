@@ -1,8 +1,8 @@
 import copy
 
 from helpers import bx, raw_page
-from worttap.pipeline.hyphenation import merge_hyphenated
-from worttap.pipeline.normalize import normalize
+from readmate.pipeline.hyphenation import merge_hyphenated
+from readmate.pipeline.normalize import normalize
 
 
 def make_result(lines):

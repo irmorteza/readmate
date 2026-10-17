@@ -1,5 +1,5 @@
 from helpers import bx, raw_page
-from worttap.pipeline.normalize import clean_word, normalize
+from readmate.pipeline.normalize import clean_word, normalize
 
 
 def two_lines():

@@ -1,4 +1,4 @@
-const KEY = "worttap.token";
+const KEY = "readmate.token";
 
 // Kept in memory too, so a blocked/failing localStorage still works for the current session.
 let memoryToken: string | null = null;

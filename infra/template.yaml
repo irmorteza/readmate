@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: WortTap backend - Textract OCR behind a Lambda Function URL
+Description: ReadMate backend - Textract OCR behind a Lambda Function URL
 
 Parameters:
   PilotToken:
@@ -29,7 +29,7 @@ Resources:
       MemorySize: 512
       Timeout: 15
       CodeUri: ../backend/src
-      Handler: worttap.handler.handler
+      Handler: readmate.handler.handler
       # No ReservedConcurrentExecutions: this account's concurrency limit (10) is too low to
       # reserve any. Abuse protection is the token plus the budget alarm below.
       Environment:

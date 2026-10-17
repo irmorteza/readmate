@@ -1,4 +1,4 @@
-# WortTap pilot results
+# ReadMate pilot results
 
 Fill this in while working through the deployment and the manual device checklist
 (spec §9 and §10). Tick a box only after seeing it work.

@@ -1,4 +1,4 @@
-from worttap.pipeline.types import OcrBox, OcrLine, OcrResult, OcrWord, RawPage
+from readmate.pipeline.types import OcrBox, OcrLine, OcrResult, OcrWord, RawPage
 
 _STRIP = ",.;:!?»«„“”\"'‘’‚()[]"
 

@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from worttap.engines.textract import from_textract
-from worttap.pipeline.types import RawPage
+from readmate.engines.textract import from_textract
+from readmate.pipeline.types import RawPage
 
 _FIXTURES = Path(__file__).resolve().parents[3] / "tests" / "fixtures"
 

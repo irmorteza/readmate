@@ -8,9 +8,9 @@ import pytest
 from botocore.exceptions import EndpointConnectionError
 from botocore.stub import Stubber
 
-from worttap import handler as handler_module
-from worttap.engines import textract as textract_module
-from worttap.handler import handler
+from readmate import handler as handler_module
+from readmate.engines import textract as textract_module
+from readmate.handler import handler
 
 TOKEN = "s3cret-token-xyz"
 MAX_BYTES = 5 * 1024 * 1024

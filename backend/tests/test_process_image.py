@@ -4,8 +4,8 @@ import jsonschema
 import pytest
 
 from helpers import bx, raw_page
-from worttap.core.process_image import process_image
-from worttap.engines.fake import FakeEngine
+from readmate.core.process_image import process_image
+from readmate.engines.fake import FakeEngine
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

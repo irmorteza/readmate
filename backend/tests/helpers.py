@@ -1,4 +1,4 @@
-from worttap.pipeline.types import Box, RawPage
+from readmate.pipeline.types import Box, RawPage
 
 
 def raw_page(lines: list[list[tuple[str, Box]]], conf: float = 0.99) -> RawPage:

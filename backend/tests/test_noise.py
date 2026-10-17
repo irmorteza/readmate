@@ -1,9 +1,9 @@
 import copy
 
 from helpers import bx, raw_page
-from worttap.pipeline.hyphenation import merge_hyphenated
-from worttap.pipeline.noise import filter_noise
-from worttap.pipeline.normalize import normalize
+from readmate.pipeline.hyphenation import merge_hyphenated
+from readmate.pipeline.noise import filter_noise
+from readmate.pipeline.normalize import normalize
 
 
 def make(words, conf=0.99):

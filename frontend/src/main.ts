@@ -42,7 +42,7 @@ const button = (label: string, onClick: () => void, cls = "") =>
   h("button", { type: "button", class: cls, textContent: label, onclick: onClick });
 
 const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
-const HINT_KEY = "worttap.ios-hint-dismissed";
+const HINT_KEY = "readmate.ios-hint-dismissed";
 const hintDismissed = () => {
   try {
     return localStorage.getItem(HINT_KEY) === "1";
@@ -65,7 +65,7 @@ function screenNeedsToken(): HTMLElement {
   return h(
     "section",
     { class: "screen" },
-    h("h1", { textContent: "WortTap" }),
+    h("h1", { textContent: "ReadMate" }),
     h("p", { textContent: "Paste your access token to start." }),
     input,
     button("Save", () => controller.saveToken(input.value), "primary"),
@@ -78,7 +78,7 @@ function screenIdle(): HTMLElement {
   const screen = h(
     "section",
     { class: "screen" },
-    h("h1", { textContent: "WortTap" }),
+    h("h1", { textContent: "ReadMate" }),
     actions,
     settingsMenu(),
   );

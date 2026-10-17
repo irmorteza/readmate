@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
-from worttap.handler import handler  # noqa: E402
+from readmate.handler import handler  # noqa: E402
 
 ALLOWED_ORIGIN = "http://localhost:5173"
 

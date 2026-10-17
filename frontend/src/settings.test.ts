@@ -11,7 +11,7 @@ describe("token settings", () => {
   it("trims surrounding whitespace and newlines before saving", () => {
     expect(saveToken("  abc123\n")).toBe("abc123");
     expect(getToken()).toBe("abc123");
-    expect(localStorage.getItem("worttap.token")).toBe("abc123");
+    expect(localStorage.getItem("readmate.token")).toBe("abc123");
   });
 
   it("rejects a whitespace-only token without saving", () => {
