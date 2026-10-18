@@ -5,10 +5,11 @@ import type { TranslationService, WordInfo } from "./translation";
 
 const info = (word: string): WordInfo => ({
   word,
-  type: "Noun (der)",
-  ipa: "/ipa/",
+  pos: "Noun (der)",
+  phonetic: "/ipa/",
   translation: "Translated " + word,
-  example: "Example for " + word,
+  exampleDe: "Example for " + word,
+  exampleEn: "Translated example for " + word,
 });
 
 function service(lookup?: TranslationService["lookup"]): TranslationService & { lookup: ReturnType<typeof vi.fn> } {

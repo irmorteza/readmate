@@ -79,9 +79,9 @@ function createSheet(onClose: () => void) {
     },
     show(info: WordInfo) {
       wordEl.textContent = info.word;
-      metaEl.textContent = `${info.type} • ${info.ipa}`;
+      metaEl.textContent = `${info.pos} • ${info.phonetic}`;
       translationEl.textContent = info.translation;
-      exampleEl.textContent = `"${info.example}"`;
+      exampleEl.textContent = `"${info.exampleDe}"`;
     },
     showUnavailable() {
       metaEl.textContent = "";

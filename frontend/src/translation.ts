@@ -1,32 +1,81 @@
-/** What the translation sheet shows for a tapped word. */
+/** What the word sheet shows for a tapped word. */
 export interface WordInfo {
   word: string;
-  type: string;
-  ipa: string;
+  phonetic: string;
+  pos: string;
   translation: string;
-  example: string;
+  exampleDe: string;
+  exampleEn: string;
 }
 
 /**
- * The boundary to the meaning lookup. Phase 2 replaces the stub below with a real service
- * (e.g. POST /explain with { word, context }); the UI only knows this interface.
+ * The boundary to the meaning lookup. The owner defines the real service later (for example
+ * POST /explain with { word, context }); the UI only knows this interface.
  */
 export interface TranslationService {
   lookup(word: string, context: string): Promise<WordInfo>;
 }
 
-/** What the stub service answers for every word. */
-export const DEFAULT_WORD_INFO: Readonly<Omit<WordInfo, "word">> = Object.freeze({
-  type: "Noun (der)",
-  ipa: "/ˈvɔʁtˌʃats/",
-  translation: "Vocabulary / Lexicon",
-  example: "Ein großer Wortschatz hilft beim Sprachenlernen.",
+type Entry = Readonly<Omit<WordInfo, "word">>;
+
+const freeze = (entry: Entry): Entry => Object.freeze({ ...entry });
+
+/** UI mock data from the designer's concept. These are not real translations. */
+export const DUMMY_DICTIONARY: Readonly<Record<string, Entry>> = Object.freeze({
+  Wortschatz: freeze({
+    phonetic: "/ˈvɔʁtˌʃat͡s/",
+    pos: "Noun (m.)",
+    translation: "Vocabulary / Lexicon",
+    exampleDe: "Das Lesen von Büchern erweitert den Wortschatz.",
+    exampleEn: "Reading books expands vocabulary.",
+  }),
+  Lesen: freeze({
+    phonetic: "/ˈleːzn̩/",
+    pos: "Noun (n.)",
+    translation: "Reading / To read",
+    exampleDe: "Tägliches Lesen stärkt das Gedächtnis.",
+    exampleEn: "Daily reading strengthens memory.",
+  }),
+  Büchern: freeze({
+    phonetic: "/ˈbyːçɐn/",
+    pos: "Noun (pl. dat.)",
+    translation: "Books",
+    exampleDe: "Wir lernen viel aus guten Büchern.",
+    exampleEn: "We learn a lot from good books.",
+  }),
+  erweitert: freeze({
+    phonetic: "/ɛɐ̯ˈvaɪ̯tɐt/",
+    pos: "Verb (3rd pers.)",
+    translation: "Expands / Broadens",
+    exampleDe: "Reisen erweitert den Horizont.",
+    exampleEn: "Travel expands one's horizon.",
+  }),
+  Sprachverständnis: freeze({
+    phonetic: "/ˈʃpʁaːxvɛɐ̯ˌʃtɛntnɪs/",
+    pos: "Noun (n.)",
+    translation: "Language comprehension",
+    exampleDe: "Ein gutes Sprachverständnis ist wichtig.",
+    exampleEn: "Good language comprehension is important.",
+  }),
 });
 
-/** Placeholder service: the tapped word plus the default payload. Not a real translation. */
+/** Generic placeholder for a word the dummy dictionary does not know. */
+export function fallbackInfo(word: string): WordInfo {
+  return {
+    word,
+    phonetic: `/${word.toLowerCase()}/`,
+    pos: "Word",
+    translation: `Meaning of "${word}"`,
+    exampleDe: `Hier ist ein Beispielsatz mit ${word}.`,
+    exampleEn: `Here is an example sentence with ${word}.`,
+  };
+}
+
+/** Placeholder service: the dummy dictionary, a generic fallback otherwise. */
 export const stubTranslationService: TranslationService = {
   async lookup(word) {
-    return { ...DEFAULT_WORD_INFO, word };
+    const entry = Object.hasOwn(DUMMY_DICTIONARY, word) ? DUMMY_DICTIONARY[word] : undefined;
+    return entry ? { ...entry, word } : fallbackInfo(word);
   },
 };
 
