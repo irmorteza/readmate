@@ -1,0 +1,193 @@
+name: ci-cd
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SAM_CLI_TELEMETRY: "0"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: test-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements-dev.txt
+            backend/src/requirements.txt
+      - name: Install backend dependencies and linters
+        run: pip install -r backend/requirements-dev.txt cfn-lint==1.57.2 actionlint-py==1.7.12.25
+      - name: Ruff
+        working-directory: backend
+        run: ruff check .
+      - name: Backend tests
+        working-directory: backend
+        run: pytest -q
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Frontend tests
+        working-directory: frontend
+        run: npx vitest run
+      - name: Typecheck
+        working-directory: frontend
+        run: npx tsc --noEmit
+      - name: Lint workflows
+        run: actionlint
+      - name: Lint CloudFormation templates
+        run: cfn-lint infra/template.yaml infra/github-oidc.yaml
+
+  deploy-backend:
+    needs: test
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    outputs:
+      api_url: ${{ steps.url.outputs.api_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: aws-actions/setup-sam@89ddb14d60e682855e3fea4be85b3c56485de310 # v3
+      - name: Build
+        run: sam build -t infra/template.yaml
+      - name: Deploy
+        env:
+          PILOT_TOKEN: ${{ secrets.PILOT_TOKEN }}
+          STACK_NAME: ${{ vars.STACK_NAME }}
+          REGION: ${{ vars.AWS_REGION }}
+          FRONTEND_ORIGIN: ${{ vars.FRONTEND_ORIGIN }}
+          ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+          EXECUTION_ROLE_ARN: ${{ vars.OCR_EXECUTION_ROLE_ARN }}
+        run: |
+          sam deploy \
+            --stack-name "$STACK_NAME" --region "$REGION" --resolve-s3 \
+            --capabilities CAPABILITY_IAM --no-confirm-changeset --no-fail-on-empty-changeset \
+            --parameter-overrides "PilotToken=$PILOT_TOKEN" "FrontendOrigin=$FRONTEND_ORIGIN" \
+              "AlertEmail=$ALERT_EMAIL" "OcrEngine=textract" "ExecutionRoleArn=$EXECUTION_ROLE_ARN"
+      - name: Read the Function URL
+        id: url
+        env:
+          STACK_NAME: ${{ vars.STACK_NAME }}
+          REGION: ${{ vars.AWS_REGION }}
+        run: |
+          url=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$REGION" \
+            --query "Stacks[0].Outputs[?OutputKey=='FunctionUrl'].OutputValue" --output text)
+          if [ -z "$url" ] || [ "$url" = "None" ]; then
+            echo "The FunctionUrl stack output is empty" >&2
+            exit 1
+          fi
+          echo "api_url=$url" >> "$GITHUB_OUTPUT"
+
+  deploy-frontend:
+    needs: deploy-backend
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Build against the backend just deployed
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ needs.deploy-backend.outputs.api_url }}
+          VITE_BUILD_SHA: ${{ github.sha }}
+        run: npm run build
+      - name: Zip the site
+        run: |
+          cd frontend/dist && zip -r ../site.zip . && cd ../..
+          entries=$(unzip -Z1 frontend/site.zip)
+          echo "$entries" | grep -qx "index.html" || { echo "index.html is not at the zip root" >&2; exit 1; }
+          case "$entries" in
+            *\\*) echo "zip entry names contain backslashes" >&2; exit 1 ;;
+          esac
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Deploy to Amplify
+        env:
+          AMPLIFY_APP_ID: ${{ vars.AMPLIFY_APP_ID }}
+          AMPLIFY_BRANCH: ${{ vars.AMPLIFY_BRANCH }}
+          REGION: ${{ vars.AWS_REGION }}
+        run: |
+          out=$(aws amplify create-deployment --app-id "$AMPLIFY_APP_ID" \
+            --branch-name "$AMPLIFY_BRANCH" --region "$REGION" --output json)
+          job_id=$(echo "$out" | jq -r .jobId)
+          upload_url=$(echo "$out" | jq -r .zipUploadUrl)
+          echo "::add-mask::$upload_url"
+          curl --fail --silent --show-error -T frontend/site.zip "$upload_url"
+          aws amplify start-deployment --app-id "$AMPLIFY_APP_ID" \
+            --branch-name "$AMPLIFY_BRANCH" --job-id "$job_id" --region "$REGION" > /dev/null
+          for _ in $(seq 1 30); do
+            status=$(aws amplify get-job --app-id "$AMPLIFY_APP_ID" --branch-name "$AMPLIFY_BRANCH" \
+              --job-id "$job_id" --region "$REGION" --query "job.summary.status" --output text)
+            echo "Amplify job $job_id: $status"
+            case "$status" in
+              SUCCEED) exit 0 ;;
+              FAILED|CANCELLED) exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "Timed out waiting for the Amplify deployment" >&2
+          exit 1
+
+  smoke-test:
+    needs: [deploy-backend, deploy-frontend]
+    runs-on: ubuntu-latest
+    # The environment is only needed to read vars.FRONTEND_ORIGIN; no id-token, so no AWS access.
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Smoke test
+        env:
+          API_URL: ${{ needs.deploy-backend.outputs.api_url }}
+          FRONTEND_ORIGIN: ${{ vars.FRONTEND_ORIGIN }}
+        run: |
+          : "${API_URL:?the api_url output of deploy-backend is empty}"
+          : "${FRONTEND_ORIGIN:?FRONTEND_ORIGIN is not set on the production environment}"
+          python scripts/smoke_test.py --api-url "$API_URL" --frontend-origin "$FRONTEND_ORIGIN" --sha "$GITHUB_SHA"
