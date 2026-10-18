@@ -1,0 +1,191 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  ReadMate CI/CD bootstrap - GitHub OIDC provider and the scoped deploy role.
+  Deployed once by the owner from the laptop (never by CI), stack name readmate-github-oidc.
+
+Parameters:
+  GitHubOwner:
+    Type: String
+    Description: GitHub user or organization that owns the repository.
+  GitHubRepo:
+    Type: String
+    Default: readmate
+  AppStackName:
+    Type: String
+    Default: readmate
+    Description: Name of the SAM stack the role may update; all resource patterns derive from it.
+  AmplifyAppId:
+    Type: String
+  AmplifyBranch:
+    Type: String
+    Default: staging
+  SamBucketName:
+    Type: String
+    Description: The aws-sam-cli-managed-default-samclisourcebucket-... bucket from the SAM stack outputs.
+  CreateOidcProvider:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Description: An account can hold one GitHub provider; use "false" if it already exists.
+
+Conditions:
+  CreateProvider: !Equals [!Ref CreateOidcProvider, "true"]
+
+Resources:
+  # No ThumbprintList: AWS no longer uses it for GitHub's provider.
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: CreateProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: readmate-github-deploy
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !If
+                - CreateProvider
+                - !Ref GitHubOidcProvider
+                - !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubOwner}/${GitHubRepo}:environment:production"
+      Policies:
+        - PolicyName: ReadmateDeploy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CloudFormationOwnStack
+                Effect: Allow
+                Action:
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStackResource
+                  - cloudformation:DescribeStackResources
+                  - cloudformation:GetTemplate
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:ListStackResources
+                Resource: !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AppStackName}/*"
+              - Sid: CloudFormationSamManagedStack
+                Effect: Allow
+                Action: cloudformation:DescribeStacks
+                Resource: !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/aws-sam-cli-managed-default/*"
+              - Sid: CloudFormationServerlessTransform
+                Effect: Allow
+                Action: cloudformation:CreateChangeSet
+                Resource: !Sub "arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31"
+              - Sid: CloudFormationValidate
+                Effect: Allow
+                Action: cloudformation:ValidateTemplate
+                Resource: "*"
+              - Sid: SamBucketObjects
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${SamBucketName}/*"
+              - Sid: SamBucket
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetBucketLocation
+                Resource: !Sub "arn:aws:s3:::${SamBucketName}"
+              - Sid: LambdaOwnFunctions
+                Effect: Allow
+                Action:
+                  - lambda:CreateFunction
+                  - lambda:DeleteFunction
+                  - lambda:GetFunction
+                  - lambda:GetFunctionConfiguration
+                  - lambda:UpdateFunctionCode
+                  - lambda:UpdateFunctionConfiguration
+                  - lambda:CreateFunctionUrlConfig
+                  - lambda:UpdateFunctionUrlConfig
+                  - lambda:GetFunctionUrlConfig
+                  - lambda:DeleteFunctionUrlConfig
+                  - lambda:AddPermission
+                  - lambda:RemovePermission
+                  - lambda:TagResource
+                  - lambda:UntagResource
+                  - lambda:ListTags
+                  - lambda:PutFunctionConcurrency
+                  - lambda:DeleteFunctionConcurrency
+                Resource: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AppStackName}-*"
+              - Sid: IamOwnRoles
+                Effect: Allow
+                Action:
+                  - iam:GetRole
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:UpdateAssumeRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:GetRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:TagRole
+                  - iam:UntagRole
+                Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/${AppStackName}-*"
+              # SAM only attaches the basic execution policy; nothing else may be attached.
+              - Sid: IamAttachBasicExecutionOnly
+                Effect: Allow
+                Action: iam:AttachRolePolicy
+                Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/${AppStackName}-*"
+                Condition:
+                  ArnEquals:
+                    iam:PolicyARN: arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+              - Sid: IamPassRoleToLambdaOnly
+                Effect: Allow
+                Action: iam:PassRole
+                Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/${AppStackName}-*"
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: lambda.amazonaws.com
+              - Sid: LogsOwnLogGroups
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:DeleteLogGroup
+                  - logs:PutRetentionPolicy
+                  - logs:TagResource
+                  - logs:TagLogGroup
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AppStackName}-*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AppStackName}-*:*"
+              - Sid: LogsDescribe
+                Effect: Allow
+                Action: logs:DescribeLogGroups
+                Resource: "*"
+              - Sid: BudgetsInThisAccount
+                Effect: Allow
+                Action:
+                  - budgets:ViewBudget
+                  - budgets:ModifyBudget
+                Resource: !Sub "arn:aws:budgets::${AWS::AccountId}:budget/*"
+              - Sid: AmplifyDeployToStagingBranch
+                Effect: Allow
+                Action:
+                  - amplify:CreateDeployment
+                  - amplify:StartDeployment
+                  - amplify:GetJob
+                  - amplify:GetBranch
+                Resource:
+                  - !Sub "arn:aws:amplify:${AWS::Region}:${AWS::AccountId}:apps/${AmplifyAppId}/branches/${AmplifyBranch}"
+                  - !Sub "arn:aws:amplify:${AWS::Region}:${AWS::AccountId}:apps/${AmplifyAppId}/branches/${AmplifyBranch}/jobs/*"
+
+Outputs:
+  DeployRoleArn:
+    Description: Set as the AWS_DEPLOY_ROLE_ARN variable of the GitHub "production" environment.
+    Value: !GetAtt DeployRole.Arn
