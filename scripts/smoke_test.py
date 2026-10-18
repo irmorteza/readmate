@@ -23,7 +23,12 @@ class CheckError(Exception):
 
 
 def _request(
-    url: str, *, method: str = "GET", data: bytes | None = None, headers=None, timeout: float
+    url: str,
+    *,
+    method: str = "GET",
+    data: bytes | None = None,
+    headers=None,
+    timeout: float,
 ) -> tuple[int, bytes]:
     req = urllib.request.Request(url, data=data, method=method, headers=headers or {})
     try:
@@ -66,7 +71,9 @@ def _check_frontend(api_url: str, origin: str, sha: str, timeout: float) -> list
         failures.append("frontend page title is not 'ReadMate'")
     match = ASSET_RE.search(html)
     if not match:
-        return failures + ["frontend page links no /assets/*.js bundle (broken zip layout?)"]
+        return failures + [
+            "frontend page links no /assets/*.js bundle (broken zip layout?)"
+        ]
     asset = match.group(0)
     try:
         status, js_bytes = _request(origin + asset, timeout=timeout)
@@ -82,11 +89,15 @@ def _check_frontend(api_url: str, origin: str, sha: str, timeout: float) -> list
             "(built against a stale backend URL?)"
         )
     if sha[:7] not in js:
-        failures.append(f"bundle does not contain the commit SHA {sha[:7]} (stale or wrong build?)")
+        failures.append(
+            f"bundle does not contain the commit SHA {sha[:7]} (stale or wrong build?)"
+        )
     return failures
 
 
-def run_checks(api_url: str, frontend_origin: str, sha: str, timeout: float = 15.0) -> list[str]:
+def run_checks(
+    api_url: str, frontend_origin: str, sha: str, timeout: float = 15.0
+) -> list[str]:
     """Run every check; returns failure messages (empty list means all passed)."""
     return _check_backend(api_url, timeout) + _check_frontend(
         api_url, frontend_origin, sha, timeout
