@@ -1,20 +1,17 @@
 import "./styles.css";
 import { postOcr } from "./api";
-import {
-  createController,
-  errorMessage,
-  isEmptyResult,
-  NO_TEXT_MESSAGE,
-  type State,
-} from "./app";
+import { createController, errorMessage, type State } from "./app";
 import { BUILD_SHA } from "./build-info";
 import { createCapture } from "./capture";
+import { button, h } from "./dom";
+import { renderHeader, watchOnlineStatus } from "./header";
 import { prepareImage } from "./image";
-import { renderOverlay, type ZoomLevel } from "./overlay";
-import { createSelection } from "./selection";
+import { createResultView } from "./result-view";
 import { clearToken, getToken, saveToken } from "./settings";
+import { createTranslationService } from "./translation";
 
 const root = document.getElementById("app")!;
+const translation = createTranslationService();
 
 const controller = createController({
   prepareImage,
@@ -26,22 +23,6 @@ const controller = createController({
   createObjectURL: (blob) => URL.createObjectURL(blob),
 });
 
-function h<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  props: Partial<HTMLElementTagNameMap[K]> & { class?: string } = {},
-  ...children: (Node | string)[]
-): HTMLElementTagNameMap[K] {
-  const el = document.createElement(tag);
-  const { class: className, ...rest } = props;
-  if (className) el.className = className;
-  Object.assign(el, rest);
-  el.append(...children);
-  return el;
-}
-
-const button = (label: string, onClick: () => void, cls = "") =>
-  h("button", { type: "button", class: cls, textContent: label, onclick: onClick });
-
 const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
 const HINT_KEY = "readmate.ios-hint-dismissed";
 const hintDismissed = () => {
@@ -52,25 +33,19 @@ const hintDismissed = () => {
   }
 };
 
-function settingsMenu(): HTMLElement {
-  return h(
-    "details",
-    { class: "menu" },
-    h("summary", { textContent: "Settings" }),
-    button("Reset token", () => controller.resetToken()),
-    h("p", { class: "version", textContent: `Version ${BUILD_SHA}` }),
-  );
-}
+const card = (...children: (Node | string)[]) => h("div", { class: "card" }, ...children);
 
 function screenNeedsToken(): HTMLElement {
   const input = h("input", { type: "password", placeholder: "Paste token", autocomplete: "off" });
   return h(
     "section",
     { class: "screen" },
-    h("h1", { textContent: "ReadMate" }),
-    h("p", { textContent: "Paste your access token to start." }),
-    input,
-    button("Save", () => controller.saveToken(input.value), "primary"),
+    card(
+      h("h2", { textContent: "Welcome to ReadMate" }),
+      h("p", { class: "muted", textContent: "Paste your access token to start." }),
+      input,
+      button("Save", () => controller.saveToken(input.value), "primary full"),
+    ),
   );
 }
 
@@ -80,9 +55,14 @@ function screenIdle(): HTMLElement {
   const screen = h(
     "section",
     { class: "screen" },
-    h("h1", { textContent: "ReadMate" }),
-    actions,
-    settingsMenu(),
+    card(
+      h("h2", { textContent: "Scan a page" }),
+      h("p", {
+        class: "muted",
+        textContent: "Take a photo of a German book or newspaper page, then tap any word.",
+      }),
+      actions,
+    ),
   );
   if (isIos && !(navigator as { standalone?: boolean }).standalone && !hintDismissed()) {
     const hint = h(
@@ -100,7 +80,6 @@ function screenIdle(): HTMLElement {
     );
     screen.append(hint);
   }
-  screen.append(h("footer", { class: "hint", textContent: "Deploy test – v1" }));
   return screen;
 }
 
@@ -108,8 +87,10 @@ function screenBusy(imageUrl?: string): HTMLElement {
   return h(
     "section",
     { class: "screen" },
-    imageUrl ? h("img", { class: "preview", src: imageUrl, alt: "" }) : "",
-    h("p", { class: "spinner", textContent: "Reading text…" }),
+    card(
+      imageUrl ? h("img", { class: "preview", src: imageUrl, alt: "" }) : "",
+      h("p", { class: "spinner", textContent: "Reading text…" }),
+    ),
   );
 }
 
@@ -117,64 +98,14 @@ function screenError(state: Extract<State, { kind: "error" }>): HTMLElement {
   const screen = h(
     "section",
     { class: "screen" },
-    h("p", { class: "error", textContent: errorMessage(state.error) }),
+    card(h("p", { class: "error", textContent: errorMessage(state.error) })),
   );
   if (state.error.kind === "unauthorized") {
-    screen.append(button("Enter token again", () => controller.resetToken(), "primary"));
+    screen.append(button("Enter token again", () => controller.resetToken(), "primary full"));
   }
-  if (state.blob) screen.append(button("Try again", () => void controller.retry(), "primary"));
-  screen.append(button("New photo", () => controller.newPhoto()));
+  if (state.blob) screen.append(button("Try again", () => void controller.retry(), "primary full"));
+  screen.append(button("New photo", () => controller.newPhoto(), "secondary full"));
   return screen;
-}
-
-function screenResult(state: Extract<State, { kind: "result" }>): HTMLElement {
-  const { result, imageUrl } = state;
-  if (isEmptyResult(result)) {
-    return h(
-      "section",
-      { class: "screen" },
-      h("p", { textContent: NO_TEXT_MESSAGE }),
-      button("New photo", () => controller.newPhoto(), "primary"),
-    );
-  }
-
-  const sheet = h("div", { class: "sheet", hidden: true });
-  const stageHost = h("div", { class: "stage-host" });
-  const selection = createSelection(result, ({ word }) => {
-    const copy = button("Copy", () => {
-      navigator.clipboard
-        .writeText(word.text)
-        .then(() => (copy.textContent = "Copied"))
-        .catch(() => (copy.textContent = "Copy failed"));
-    });
-    sheet.replaceChildren(h("strong", { textContent: word.text }), copy);
-    sheet.hidden = false;
-  });
-  selection.subscribe((id) => {
-    if (id === null) sheet.hidden = true;
-  });
-  const overlay = renderOverlay(stageHost, imageUrl, result, selection);
-
-  const zoomButton = (label: string, level: ZoomLevel) =>
-    button(label, () => overlay.setZoom(level));
-  const outlines = h("input", { type: "checkbox", onchange: () => overlay.setOutlines(outlines.checked) });
-
-  return h(
-    "section",
-    { class: "screen result" },
-    h(
-      "div",
-      { class: "toolbar" },
-      zoomButton("Fit", 1),
-      zoomButton("2×", 2),
-      zoomButton("3×", 3),
-      h("label", {}, outlines, " Outlines"),
-      button("New photo", () => controller.newPhoto(), "primary"),
-      settingsMenu(),
-    ),
-    stageHost,
-    sheet,
-  );
 }
 
 function render(state: State): void {
@@ -193,14 +124,19 @@ function render(state: State): void {
       screen = screenBusy(state.imageUrl);
       break;
     case "result":
-      screen = screenResult(state);
+      screen = createResultView(state, { translation, onNewPhoto: () => controller.newPhoto() });
       break;
     case "error":
       screen = screenError(state);
       break;
   }
-  root.replaceChildren(screen);
+  const header = renderHeader({
+    buildSha: BUILD_SHA,
+    onResetToken: state.kind === "needsToken" ? undefined : () => controller.resetToken(),
+  });
+  root.replaceChildren(h("div", { class: "app" }, header, screen));
 }
 
+watchOnlineStatus();
 controller.subscribe(render);
 render(controller.getState());

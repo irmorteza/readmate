@@ -13,7 +13,7 @@ export function createCapture(root: HTMLElement, onFile: (file: File) => void): 
     });
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "primary";
+    button.className = camera ? "primary full" : "secondary full";
     button.textContent = label;
     button.addEventListener("click", () => input.click());
     root.append(input, button);
