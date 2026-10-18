@@ -476,3 +476,46 @@ input[type="password"] {
 .sheet-actions .primary {
   padding: 0.875rem 1rem;
 }
+
+/* Toast (UI v2) */
+.toast {
+  position: absolute;
+  top: 4rem;
+  left: 1rem;
+  right: 1rem;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  background: var(--slate-900);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.3);
+  animation: toast-in 0.2s ease-out;
+}
+.toast[hidden] {
+  display: none;
+}
+.toast-close {
+  padding: 0 0.25rem;
+  background: transparent;
+  color: var(--slate-400);
+  font-size: 1.25rem;
+  line-height: 1;
+  box-shadow: none;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
