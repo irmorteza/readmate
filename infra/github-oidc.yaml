@@ -10,6 +10,21 @@ Parameters:
   GitHubRepo:
     Type: String
     Default: readmate
+  GitHubOwnerId:
+    Type: String
+    AllowedPattern: '^[0-9]+$'
+    ConstraintDescription: Digits only, the numeric id of the GitHub user or organization.
+    Description: >-
+      Numeric id of GitHubOwner. GitHub puts it into the OIDC subject claim
+      (repo:OWNER@OWNER_ID/REPO@REPO_ID:environment:production). Find it with
+      `gh api users/OWNER --jq .id` (see docs/deploy.md).
+  GitHubRepoId:
+    Type: String
+    AllowedPattern: '^[0-9]+$'
+    ConstraintDescription: Digits only, the numeric id of the GitHub repository.
+    Description: >-
+      Numeric id of the repository. Find it with `gh api repos/OWNER/REPO --jq .id`
+      (see docs/deploy.md).
   AppStackName:
     Type: String
     Default: readmate
@@ -84,7 +99,7 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubOwner}/${GitHubRepo}:environment:production"
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubOwner}@${GitHubOwnerId}/${GitHubRepo}@${GitHubRepoId}:environment:production"
       Policies:
         - PolicyName: ReadmateDeploy
           PolicyDocument:

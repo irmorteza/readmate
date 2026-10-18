@@ -102,7 +102,7 @@ def as_list(value) -> list:
 def test_trust_subject_is_production_environment_only(role):
     (trust,) = role["AssumeRolePolicyDocument"]["Statement"]
     assert trust["Condition"]["StringEquals"][SUB_KEY] == (
-        "repo:${GitHubOwner}/${GitHubRepo}:environment:production"
+        "repo:${GitHubOwner}@${GitHubOwnerId}/${GitHubRepo}@${GitHubRepoId}:environment:production"
     )
     assert set(trust["Condition"]) == {"StringEquals"}  # no StringLike / wildcard subjects
 
@@ -230,6 +230,8 @@ def test_parameters_and_outputs(template):
     assert set(params) == {
         "GitHubOwner",
         "GitHubRepo",
+        "GitHubOwnerId",
+        "GitHubRepoId",
         "AppStackName",
         "AmplifyAppId",
         "AmplifyBranch",
@@ -257,3 +259,25 @@ def test_frontend_origin_parameter_only_accepts_a_bare_https_origin():
         "",
     ):
         assert not re.fullmatch(pattern, bad), bad
+
+
+def test_numeric_ids_are_required_digits_only(template):
+    import re
+
+    for name in ("GitHubOwnerId", "GitHubRepoId"):
+        param = template["Parameters"][name]
+        assert param["Type"] == "String"
+        assert "Default" not in param  # no wildcard-ish default: the owner must supply both
+        for good in ("12543098", "1424140550", "1"):
+            assert re.fullmatch(param["AllowedPattern"], good), (name, good)
+        for bad in ("", "irmorteza", "12543098/", "12 34", "*", "-1", "0x1F"):
+            assert not re.fullmatch(param["AllowedPattern"], bad), (name, bad)
+
+
+def test_trust_subject_has_no_unpinned_identity_parts(role):
+    (trust,) = role["AssumeRolePolicyDocument"]["Statement"]
+    sub = trust["Condition"]["StringEquals"][SUB_KEY]
+    # every identity component carries its immutable id; no bare owner/repo names remain
+    assert sub.count("@") == 2
+    assert "${GitHubOwner}@${GitHubOwnerId}" in sub and "${GitHubRepo}@${GitHubRepoId}" in sub
+    assert "*" not in sub

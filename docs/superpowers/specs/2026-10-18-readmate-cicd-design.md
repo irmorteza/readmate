@@ -236,3 +236,7 @@ An independent review of `infra/github-oidc.yaml` found that the §4.3 permissio
 - §6.4: split into `build-frontend` (checkout, `npm ci`, build, zip, upload artifact `site`; `permissions: contents: read`, no environment, no OIDC token) and `deploy-frontend` (downloads the artifact, configures AWS credentials, uploads to Amplify; installs and builds nothing, no checkout).
 - `.gitignore` ignores `*.zip`.
 - §5 step 1 of the rollout covers an existing GitHub repository: the only rule is that `.github/workflows/ci-cd.yml` must not reach GitHub before the `production` environment and its `main`-only rule exist.
+
+### Amendment found during the first real run
+
+- §4.3 trust subject: GitHub now issues the immutable-ID subject `repo:<owner>@<owner-id>/<repo>@<repo-id>:environment:production`, so the first CI run failed at assume-role against the name-only condition. The bootstrap template takes numeric parameters `GitHubOwnerId` and `GitHubRepoId` (digits only, no default) and the `StringEquals` condition uses the new format only. Because the ids are part of the string, a renamed or re-registered owner or repository name can no longer match. `docs/deploy.md` explains how to find the ids (GitHub CLI, REST API, CloudTrail).

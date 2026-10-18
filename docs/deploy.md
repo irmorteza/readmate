@@ -38,14 +38,39 @@ aws cloudformation deploy `
   --template-file infra/github-oidc.yaml `
   --stack-name readmate-github-oidc `
   --capabilities CAPABILITY_NAMED_IAM `
-  --parameter-overrides GitHubOwner=<owner> GitHubRepo=readmate AppStackName=readmate `
-      AmplifyAppId=d2bhw8tobanmyi AmplifyBranch=staging SamBucketName=<bucket> CreateOidcProvider=true
+  --parameter-overrides GitHubOwner=<owner> GitHubOwnerId=<owner-id> GitHubRepo=readmate GitHubRepoId=<repo-id> `
+      AppStackName=readmate AmplifyAppId=d2bhw8tobanmyi AmplifyBranch=staging SamBucketName=<bucket> `
+      CreateOidcProvider=true
 ```
 
 - `GitHubOwner` and `GitHubRepo` must be spelled exactly as on GitHub (the trust condition is case-sensitive).
+- `GitHubOwnerId` and `GitHubRepoId` are the numeric GitHub ids, see "Finding the two numeric ids" below. GitHub puts them into the OIDC subject (`repo:<owner>@<owner-id>/<repo>@<repo-id>:environment:production`), and the role trusts exactly that string, so a renamed or re-registered account or repository name can never match.
+- When you redeploy this stack later, pass `CreateOidcProvider=true` again: the stack owns the provider, and `false` would delete it.
 - `<bucket>` is the `aws-sam-cli-managed-default-samclisourcebucket-…` name from the SAM stack outputs (`aws cloudformation describe-stacks --stack-name aws-sam-cli-managed-default --query "Stacks[0].Outputs"`).
 - Use `CreateOidcProvider=false` if the account already has the GitHub provider; it must list `sts.amazonaws.com` as a client id.
 - Note the two outputs: `DeployRoleArn` and `OcrExecutionRoleArn`.
+
+#### Finding the two numeric ids
+
+GitHub's OIDC token carries the subject in the immutable form `repo:<owner>@<owner-id>/<repo>@<repo-id>:environment:production`. If assuming the role fails with `Not authorized to perform sts:AssumeRoleWithWebIdentity`, the ids in the stack are missing or wrong. Get them in one of these ways:
+
+- **GitHub CLI** (works for private repositories):
+
+  ```powershell
+  gh api users/<owner> --jq .id               # GitHubOwnerId
+  gh api repos/<owner>/<repo> --jq .id        # GitHubRepoId
+  ```
+
+- **GitHub REST API without the CLI** (the repository call needs a token for a private repository, the user call does not):
+
+  ```powershell
+  (Invoke-RestMethod https://api.github.com/users/<owner>).id
+  (Invoke-RestMethod https://api.github.com/repos/<owner>/<repo> -Headers @{ Authorization = "Bearer <github-token>" }).id
+  ```
+
+- **CloudTrail** (reads the exact string GitHub sent): CloudTrail → Event history → filter *Event name* = `AssumeRoleWithWebIdentity` → open the failed event and look at the subject (`userIdentity.userName`, or the `sub` in the error message). It reads `repo:<owner>@<owner-id>/<repo>@<repo-id>:environment:production`; the two numbers are the ids.
+
+Then update the stack from the laptop with the same command as above (all parameters, `CreateOidcProvider=true`). The change modifies only the role's trust policy.
 
 ### 2.3 Switch the app stack to the external execution role (once)
 
