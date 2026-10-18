@@ -28,6 +28,9 @@ export interface Controller {
   chooseFile(file: File): Promise<void>;
   retry(): Promise<void>;
   newPhoto(): void;
+  /** True once a result exists; it survives New photo and is dropped when the token is reset. */
+  hasLastResult(): boolean;
+  showLastResult(): void;
 }
 
 export const NO_TEXT_MESSAGE =
@@ -61,6 +64,7 @@ const toAppError = (e: unknown): AppError => (e instanceof AppError ? e : new Ap
 export function createController(deps: ControllerDeps): Controller {
   let state: State = initialState(deps.getToken());
   const subscribers = new Set<(state: State) => void>();
+  let lastResult: Extract<State, { kind: "result" }> | null = null;
   const set = (next: State) => {
     state = next;
     subscribers.forEach((fn) => fn(state));
@@ -74,7 +78,8 @@ export function createController(deps: ControllerDeps): Controller {
     }
     try {
       const result = await deps.postOcr(blob, deps.getToken() ?? "");
-      set({ kind: "result", blob, imageUrl, result });
+      lastResult = { kind: "result", blob, imageUrl, result };
+      set(lastResult);
     } catch (e) {
       set({ kind: "error", error: toAppError(e), blob, imageUrl });
     }
@@ -91,6 +96,7 @@ export function createController(deps: ControllerDeps): Controller {
     },
     resetToken() {
       deps.clearToken();
+      lastResult = null;
       set({ kind: "needsToken" });
     },
     async chooseFile(file) {
@@ -110,6 +116,10 @@ export function createController(deps: ControllerDeps): Controller {
     },
     newPhoto() {
       set({ kind: "idle" });
+    },
+    hasLastResult: () => lastResult !== null,
+    showLastResult() {
+      if (lastResult) set(lastResult);
     },
   };
 }

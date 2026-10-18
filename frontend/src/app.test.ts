@@ -151,3 +151,57 @@ describe("controller", () => {
     expect(c.getState().kind).toBe("idle");
   });
 });
+
+describe("last result", () => {
+  it("has none initially", () => {
+    expect(createController(makeDeps()).hasLastResult()).toBe(false);
+  });
+
+  it("is kept after New photo", async () => {
+    const c = createController(makeDeps());
+    await c.chooseFile(file);
+    c.newPhoto();
+    expect(c.getState().kind).toBe("idle");
+    expect(c.hasLastResult()).toBe(true);
+  });
+
+  it("showLastResult returns to the result state with the same result and image", async () => {
+    const c = createController(makeDeps());
+    await c.chooseFile(file);
+    const first = c.getState();
+    c.newPhoto();
+    c.showLastResult();
+    const state = c.getState();
+    expect(state.kind).toBe("result");
+    expect(state.kind === "result" && state.result).toBe(first.kind === "result" && first.result);
+    expect(state.kind === "result" && state.imageUrl).toBe("blob:preview");
+  });
+
+  it("showLastResult without a result is a no-op", () => {
+    const c = createController(makeDeps());
+    c.showLastResult();
+    expect(c.getState().kind).toBe("idle");
+  });
+
+  it("is forgotten when the token is reset", async () => {
+    const c = createController(makeDeps());
+    await c.chooseFile(file);
+    c.resetToken();
+    expect(c.hasLastResult()).toBe(false);
+    c.showLastResult();
+    expect(c.getState().kind).toBe("needsToken");
+  });
+
+  it("is replaced by a newer result", async () => {
+    const second = { ...result, engine: "second" } as OcrResult;
+    const post = vi.fn().mockResolvedValueOnce(result).mockResolvedValueOnce(second);
+    const c = createController(makeDeps({ postOcr: post }));
+    await c.chooseFile(file);
+    c.newPhoto();
+    await c.chooseFile(file);
+    c.newPhoto();
+    c.showLastResult();
+    const state = c.getState();
+    expect(state.kind === "result" && state.result.engine).toBe("second");
+  });
+});
