@@ -1,18 +1,24 @@
 import "./styles.css";
 import { postOcr } from "./api";
 import { createController, errorMessage, type State } from "./app";
-import { createCapture } from "./capture";
+import { renderBottomNav } from "./bottom-nav";
+import { BUILD_SHA } from "./build-info";
 import { button, h } from "./dom";
+import { createDrawer } from "./drawer";
+import { createEmptyView } from "./empty-view";
 import { renderHeader } from "./header";
 import { prepareImage } from "./image";
 import { createResultView } from "./result-view";
+import { createScanningView } from "./scanning-view";
 import { clearToken, getToken, saveToken } from "./settings";
-import { speak } from "./speech";
+import { speak, SPEECH_UNSUPPORTED_MESSAGE } from "./speech";
+import { comingSoonMessage, createToaster } from "./toast";
 import { createTranslationService } from "./translation";
-import { applyUiScale } from "./viewport";
+import { applyUiScale, describeViewport } from "./viewport";
 
 const root = document.getElementById("app")!;
 const translation = createTranslationService();
+const toaster = createToaster(); // one toaster for the whole session; it survives screen changes
 
 const controller = createController({
   prepareImage,
@@ -23,6 +29,11 @@ const controller = createController({
   isOnline: () => navigator.onLine,
   createObjectURL: (blob) => URL.createObjectURL(blob),
 });
+
+const comingSoon = (label: string) => toaster.show(comingSoonMessage(label));
+const pronounce = (text: string) => {
+  if (!speak(text)) toaster.show(SPEECH_UNSUPPORTED_MESSAGE);
+};
 
 const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
 const HINT_KEY = "readmate.ios-hint-dismissed";
@@ -51,20 +62,7 @@ function screenNeedsToken(): HTMLElement {
 }
 
 function screenIdle(): HTMLElement {
-  const actions = h("div", { class: "actions" });
-  createCapture(actions, (file) => void controller.chooseFile(file));
-  const screen = h(
-    "section",
-    { class: "screen" },
-    card(
-      h("h2", { textContent: "Scan a page" }),
-      h("p", {
-        class: "muted",
-        textContent: "Take a photo of a German book or newspaper page, then tap any word.",
-      }),
-      actions,
-    ),
-  );
+  const screen = createEmptyView({ onFile: (file) => void controller.chooseFile(file) });
   if (isIos && !(navigator as { standalone?: boolean }).standalone && !hintDismissed()) {
     const hint = h(
       "p",
@@ -84,17 +82,6 @@ function screenIdle(): HTMLElement {
   return screen;
 }
 
-function screenBusy(imageUrl?: string): HTMLElement {
-  return h(
-    "section",
-    { class: "screen" },
-    card(
-      imageUrl ? h("img", { class: "preview", src: imageUrl, alt: "" }) : "",
-      h("p", { class: "spinner", textContent: "Reading text…" }),
-    ),
-  );
-}
-
 function screenError(state: Extract<State, { kind: "error" }>): HTMLElement {
   const screen = h(
     "section",
@@ -109,37 +96,62 @@ function screenError(state: Extract<State, { kind: "error" }>): HTMLElement {
   return screen;
 }
 
-function render(state: State): void {
-  let screen: HTMLElement;
+function screenFor(state: State): HTMLElement {
   switch (state.kind) {
     case "needsToken":
-      screen = screenNeedsToken();
-      break;
+      return screenNeedsToken();
     case "idle":
-      screen = screenIdle();
-      break;
+      return screenIdle();
     case "resizing":
-      screen = screenBusy();
-      break;
+      return createScanningView({});
     case "uploading":
-      screen = screenBusy(state.imageUrl);
-      break;
+      return createScanningView({ imageUrl: state.imageUrl });
     case "result":
-      screen = createResultView(state, {
+      return createResultView(state, {
         translation,
         onNewPhoto: () => controller.newPhoto(),
-        // Temporary wiring until Task 11 composes the toast; speech is real already.
-        speak: (text) => void speak(text),
-        comingSoon: () => {},
+        speak: pronounce,
+        comingSoon,
       });
-      break;
     case "error":
-      screen = screenError(state);
-      break;
+      return screenError(state);
   }
-  // Temporary until Task 11 mounts the drawer: the menu button does nothing yet.
-  const header = renderHeader({ onMenu: () => {}, onHome: () => controller.newPhoto() });
-  root.replaceChildren(h("div", { class: "app" }, header, screen));
+}
+
+function render(state: State): void {
+  // The drawer is rebuilt with every screen, so it starts closed and shows fresh diagnostics.
+  const drawer = createDrawer({
+    version: BUILD_SHA,
+    diagnostics: describeViewport(),
+    onScanner: () => controller.newPhoto(),
+    onResetToken: () => controller.resetToken(),
+    comingSoon,
+  });
+  const header = renderHeader({ onMenu: drawer.open, onHome: () => controller.newPhoto() });
+  const nav =
+    state.kind === "needsToken"
+      ? []
+      : [
+          renderBottomNav({
+            active: state.kind === "result" ? "reader" : "scan",
+            readerAvailable: controller.hasLastResult(),
+            onScan: () => controller.newPhoto(),
+            onReader: () => controller.showLastResult(),
+            onCards: () => comingSoon("Cards"),
+            onProfile: drawer.open,
+          }),
+        ];
+  root.replaceChildren(
+    h(
+      "div",
+      { class: "app-viewport-container" },
+      header,
+      h("main", { class: "content" }, screenFor(state)),
+      ...nav,
+      drawer.element,
+      toaster.element,
+    ),
+  );
 }
 
 applyUiScale();
