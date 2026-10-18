@@ -4,7 +4,7 @@
 
 `.github/workflows/ci-cd.yml` runs on every push to any branch and on manual dispatch:
 
-`test` (every push) → `deploy-backend` → `build-frontend` → `deploy-frontend` → `smoke-test` (everything after `test` only on `master`, only if the previous job passed).
+`test` (every push) → `deploy-backend` → `build-frontend` → `deploy-frontend` → `smoke-test` (everything after `test` only on `main`, only if the previous job passed).
 
 - **test:** ruff and pytest (backend), Vitest and `tsc` (frontend), `actionlint`, `cfn-lint`.
 - **deploy-backend:** `sam build` first (dependency installation runs before any AWS credentials exist), then assumes the AWS role through GitHub OIDC, `sam deploy` to stack `readmate`, and reads the `FunctionUrl` stack output.
@@ -12,7 +12,7 @@
 - **deploy-frontend:** the only job with the OIDC token after the backend deploy; it downloads the zip and uploads it to the Amplify app through the manual-deployment API, then waits for the job. It installs and builds nothing.
 - **smoke-test:** a wrong-token request must get HTTP 401; the Amplify page must serve the ReadMate title and a bundle that contains the current API host and the commit SHA.
 
-No AWS keys are stored in GitHub. The only secret is `PILOT_TOKEN`; the workflow gets AWS credentials from a short-lived OIDC token that only the `production` environment (limited to `master`) can obtain.
+No AWS keys are stored in GitHub. The only secret is `PILOT_TOKEN`; the workflow gets AWS credentials from a short-lived OIDC token that only the `production` environment (limited to `main`) can obtain.
 
 After a deploy, the phone shows the short commit SHA under **Settings → Version**.
 
@@ -22,9 +22,9 @@ After a deploy, the phone shows the short commit SHA under **Settings → Versio
 
 ### 2.1 GitHub repository and `production` environment (before pushing anything)
 
-1. **Use the existing repository `readmate`** (or create it if it does not exist yet). Confirm it is private and spelled exactly as `GitHubRepo` will be given to the bootstrap stack (the trust condition is case-sensitive), and add it as `origin` if the local clone has no remote (`git remote add origin <url>`). **Do not push yet.** The one rule: the workflow file `.github/workflows/ci-cd.yml` must not reach GitHub before the `production` environment and its `master`-only rule exist. If the repository already contains that file on any branch, or already shows a `production` environment, do step 2 immediately and add the rule before anything else.
+1. **Use the existing repository `readmate`** (or create it if it does not exist yet). Confirm it is private and spelled exactly as `GitHubRepo` will be given to the bootstrap stack (the trust condition is case-sensitive), and add it as `origin` if the local clone has no remote (`git remote add origin <url>`). **Do not push yet.** The one rule: the workflow file `.github/workflows/ci-cd.yml` must not reach GitHub before the `production` environment and its `main`-only rule exist. If the repository already contains that file on any branch, or already shows a `production` environment, do step 2 immediately and add the rule before anything else.
 2. Settings → Environments → **New environment `production`**. If an environment named `production` already exists (for example a workflow ran before it was configured), edit it instead.
-3. **Deployment branches and tags:** Selected branches → `master` only. Do this first.
+3. **Deployment branches and tags:** Selected branches → `main` only. Do this first.
 4. **Environment secret:** `PILOT_TOKEN` (the same token the phone uses).
 
 The environment variables are added in section 2.4, once the bootstrap outputs exist.
@@ -68,7 +68,7 @@ Add these **environment variables** to `production`:
 
 No repository-level secrets and no AWS access keys.
 
-Only now push all branches. The first run of the `master` workflow deploys.
+Only now push all branches. The first run of the `main` workflow deploys.
 
 If a CI deploy fails with `AccessDenied`, add exactly the named action on the scoped resource to `infra/github-oidc.yaml` and redeploy the bootstrap stack from the laptop. Never widen to `"Action": "*"` or `AdministratorAccess`.
 
@@ -121,6 +121,6 @@ Invoke-RestMethod -Method Post -Uri "${url}ocr" -ContentType image/jpeg -Headers
 
 ## 4. Rollback and API rules
 
-- **Rollback:** `git revert <commit>` and push to `master`; the pipeline redeploys the previous state. CloudFormation already rolls a failed backend deploy back by itself.
+- **Rollback:** `git revert <commit>` and push to `main`; the pipeline redeploys the previous state. CloudFormation already rolls a failed backend deploy back by itself.
 - **If a job fails:** `test` red deploys nothing; `deploy-backend` red leaves the frontend untouched; `deploy-frontend` red leaves the new backend live with the old frontend; `smoke-test` red means both are live, so investigate.
 - **API changes must be additive.** The backend can be ahead of the frontend, and an installed PWA can keep running an older cached build, so every backend version must keep working with the previous frontend: add fields and routes, never remove or change the meaning of existing ones in the same release.

@@ -11,7 +11,7 @@ A PWA that OCRs a photographed German page (Amazon Textract) and lets you tap an
 
 ## Deployment
 
-Pushes to `master` deploy through GitHub Actions. See `docs/deploy.md` (pipeline, one-time setup, manual Windows fallback, rollback).
+Pushes to `main` deploy through GitHub Actions. See `docs/deploy.md` (pipeline, one-time setup, manual Windows fallback, rollback).
 
 ## Rules
 

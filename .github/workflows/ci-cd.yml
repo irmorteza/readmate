@@ -54,7 +54,7 @@ jobs:
 
   deploy-backend:
     needs: test
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -109,7 +109,7 @@ jobs:
   # Runs npm (and so third-party install scripts) with no secrets, no environment and no OIDC token.
   build-frontend:
     needs: deploy-backend
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -147,7 +147,7 @@ jobs:
   # Holds the OIDC token, so it only downloads the finished zip and talks to Amplify.
   deploy-frontend:
     needs: build-frontend
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
     permissions:

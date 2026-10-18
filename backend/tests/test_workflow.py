@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github" / "workflows" / "ci-cd.yml"
 DEPENDABOT = ROOT / ".github" / "dependabot.yml"
 DEPLOY_JOBS = ("deploy-backend", "deploy-frontend")
-MASTER_ONLY = "github.ref == 'refs/heads/master'"
+MAIN_ONLY = "github.ref == 'refs/heads/main'"
 SHA_PIN = re.compile(r"^[\w.-]+/[\w.-]+(/[\w./-]+)?@[0-9a-f]{40}$")
 
 
@@ -56,12 +56,12 @@ def test_only_deploy_jobs_request_id_token(jobs):
     assert jobs["build-frontend"]["permissions"] == {"contents": "read"}
 
 
-def test_deploy_jobs_run_only_on_master_in_production_environment(jobs):
+def test_deploy_jobs_run_only_on_main_in_production_environment(jobs):
     for name in DEPLOY_JOBS:
-        assert jobs[name]["if"] == MASTER_ONLY
+        assert jobs[name]["if"] == MAIN_ONLY
         assert jobs[name]["environment"] == "production"
     assert "environment" not in jobs["test"]
-    assert jobs["build-frontend"]["if"] == MASTER_ONLY
+    assert jobs["build-frontend"]["if"] == MAIN_ONLY
     assert "environment" not in jobs["build-frontend"]  # builds with no secrets and no AWS
 
 

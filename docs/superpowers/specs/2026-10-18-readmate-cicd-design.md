@@ -11,16 +11,16 @@
 Phase 1 is deployed by hand from a Windows laptop (`sam deploy`, frontend build, zip, manual upload to Amplify). Before Phase 2 adds frequent backend and frontend changes, replace that with a GitHub Actions pipeline:
 
 - every push to any branch runs all tests;
-- every push to `master` whose tests pass deploys the backend, then the frontend, then smoke-tests both;
+- every push to `main` whose tests pass deploys the backend, then the frontend, then smoke-tests both;
 - no long-lived AWS keys are stored anywhere outside the owner's laptop.
 
 **Context:** single owner, private GitHub repository `readmate`, one environment. Stack `readmate` in `eu-central-1`, deployed manually; Amplify app `readmate` (id `d2bhw8tobanmyi`), branch `staging`, created with "Deploy without Git", URL `https://staging.d2bhw8tobanmyi.amplifyapp.com`.
 
 ### Success criteria
 
-1. A push to a non-`master` branch runs the `test` job only; all deploy jobs are skipped.
-2. A push to `master` with passing tests runs `test → deploy-backend → deploy-frontend → smoke-test`, all green, with no manual step.
-3. A push to `master` with a failing test deploys nothing.
+1. A push to a non-`main` branch runs the `test` job only; all deploy jobs are skipped.
+2. A push to `main` with passing tests runs `test → deploy-backend → deploy-frontend → smoke-test`, all green, with no manual step.
+3. A push to `main` with a failing test deploys nothing.
 4. The deployed frontend shows the commit it was built from (§6), so the owner can confirm on the phone which version is running.
 5. GitHub holds no AWS access keys. The only secret is `PILOT_TOKEN`.
 6. Workflows from other branches, other repositories or forks cannot obtain AWS credentials.
@@ -38,8 +38,8 @@ Phase 1 is deployed by hand from a Windows laptop (`sam deploy`, frontend build,
 |---|---|---|
 | CI system | GitHub Actions | Code is already on GitHub; free private-repo minute quota covers this project. |
 | AWS auth | GitHub OIDC → `sts:AssumeRoleWithWebIdentity` into one scoped IAM role | Short-lived credentials per run; nothing to leak or rotate. |
-| Trust scope | Role trusts only `repo:<owner>/<repo>:environment:production` | Combined with the environment's branch rule (§5), only `master` can deploy. |
-| Deploy trigger | `push` to `master` after tests pass, plus `workflow_dispatch` (manual re-run) | Solo pilot, fast feedback on the phone; unfinished work lives on other branches. |
+| Trust scope | Role trusts only `repo:<owner>/<repo>:environment:production` | Combined with the environment's branch rule (§5), only `main` can deploy. |
+| Deploy trigger | `push` to `main` after tests pass, plus `workflow_dispatch` (manual re-run) | Solo pilot, fast feedback on the phone; unfinished work lives on other branches. |
 | Frontend hosting | Keep the existing manual-deploy Amplify app; deploy via the Amplify `CreateDeployment` / `StartDeployment` API | Same URL: no CORS change, no reinstall on the phone; ordering guaranteed after backend. |
 | Pipeline shape | One workflow, four sequential jobs | One page shows everything; frontend never deploys if tests or backend fail. |
 | Bootstrap ownership | Bootstrap stack deployed once by the owner from the laptop; never by CI | CI must not be able to change its own permissions. |
@@ -101,7 +101,7 @@ aws cloudformation deploy `
 
 Settings → Environments → **New environment `production`**:
 
-- **Deployment branches and tags:** "Selected branches" → `master` only.
+- **Deployment branches and tags:** "Selected branches" → `main` only.
 - **Environment secret:** `PILOT_TOKEN` — the same token the phone uses.
 - **Environment variables:**
 
@@ -139,7 +139,7 @@ On `ubuntu-latest`:
 
 ### 6.3 Job `deploy-backend`
 
-`needs: test`; `if: github.ref == 'refs/heads/master'`; `environment: production`; `permissions: id-token: write, contents: read`.
+`needs: test`; `if: github.ref == 'refs/heads/main'`; `environment: production`; `permissions: id-token: write, contents: read`.
 
 1. Checkout; Python 3.13.
 2. `aws-actions/configure-aws-credentials` with `role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}`, `aws-region: ${{ vars.AWS_REGION }}`.
@@ -187,7 +187,7 @@ On `ubuntu-latest`:
 
 **Rule — API changes must be additive.** Because the backend can be ahead of the frontend (row 3), and because an installed PWA may keep running a cached older frontend for a while, every backend version must keep working with the previous frontend: add fields and routes; never remove or change the meaning of existing ones in the same release. Create `CLAUDE.md` at the repo root (it does not exist yet) and record this rule there, together with a one-line pointer to `docs/deploy.md`, so future sessions follow it.
 
-**Rollback:** `git revert <commit>` and push to `master`; the pipeline redeploys the previous state.
+**Rollback:** `git revert <commit>` and push to `main`; the pipeline redeploys the previous state.
 
 ## 9. Documentation — `docs/deploy.md`
 
@@ -199,10 +199,10 @@ On `ubuntu-latest`:
 ## 10. Testing the pipeline
 
 1. **Branch run:** push the pipeline on a feature branch → only `test` runs; deploy jobs show as skipped.
-2. **Trust check:** a manual `workflow_dispatch` on that feature branch must fail to reach AWS (the `production` environment refuses non-`master` refs).
-3. **First master run:** merge → all four jobs green; the phone shows the new short SHA in settings after the PWA updates.
-4. **Red test:** on a branch, break one test, merge to `master` deliberately in a throwaway commit → no deploy jobs run; revert.
-5. **No-op deploy:** `workflow_dispatch` on `master` with no changes → `sam deploy` succeeds with an empty changeset; frontend redeploys; smoke tests pass.
+2. **Trust check:** a manual `workflow_dispatch` on that feature branch must fail to reach AWS (the `production` environment refuses non-`main` refs).
+3. **First main run:** merge → all four jobs green; the phone shows the new short SHA in settings after the PWA updates.
+4. **Red test:** on a branch, break one test, merge to `main` deliberately in a throwaway commit → no deploy jobs run; revert.
+5. **No-op deploy:** `workflow_dispatch` on `main` with no changes → `sam deploy` succeeds with an empty changeset; frontend redeploys; smoke tests pass.
 
 ## 11. Risks
 
@@ -213,7 +213,7 @@ On `ubuntu-latest`:
 | Stale PWA on the phone hides a new deploy | Build SHA visible in settings (§7); additive-API rule (§8). |
 | Supply-chain risk from third-party actions | Pinned SHAs + Dependabot. |
 | SAM artifact bucket grows with every deploy | Acceptable for the pilot (cents per month); revisit with an S3 lifecycle rule if it matters. |
-| Actions minutes on a private repo | Pipeline ~5–8 min per master push, well inside the free monthly quota for personal use. |
+| Actions minutes on a private repo | Pipeline ~5–8 min per main push, well inside the free monthly quota for personal use. |
 ## 12. Amendments after the security review of the bootstrap template (2026-10-18)
 
 An independent review of `infra/github-oidc.yaml` found that the §4.3 permissions let the deploy role rewrite itself (its name `readmate-github-deploy` matched `role/readmate-*`) and that `iam:CreateRole`/`PutRolePolicy` on app roles were admin-equivalent through the public function URL. Changes, which supersede §4.3 and §6.3 where they differ:
@@ -228,11 +228,11 @@ An independent review of `infra/github-oidc.yaml` found that the §4.3 permissio
 
 - §6.5: the smoke test also sends a CORS preflight (`OPTIONS {api}/ocr` with `Origin: <FRONTEND_ORIGIN>`, `Access-Control-Request-Method: POST`, `Access-Control-Request-Headers: content-type,x-pilot-token`) and requires `Access-Control-Allow-Origin` to equal the frontend origin, so a deploy that the phone's browser would block fails the run.
 - §4/§8 `FrontendOrigin` has `AllowedPattern: '^https://[^/\s]+$'` (bare https origin, no trailing slash).
-- §5/§10 rollout order: create the repository, then the `production` environment with its `master`-only rule and `PILOT_TOKEN`, then deploy the bootstrap stack, then set the variables, and only then push. This avoids an auto-created, unprotected `production` environment.
+- §5/§10 rollout order: create the repository, then the `production` environment with its `main`-only rule and `PILOT_TOKEN`, then deploy the bootstrap stack, then set the variables, and only then push. This avoids an auto-created, unprotected `production` environment.
 
 ### Amendments before rollout
 
 - §6.3: `sam build` runs before `configure-aws-credentials`, so dependency installation never runs with AWS credentials present. (The job still has `id-token: write` at job level, so the OIDC request variables exist for every step of `deploy-backend`; a build/deploy job split would be needed to remove that.)
 - §6.4: split into `build-frontend` (checkout, `npm ci`, build, zip, upload artifact `site`; `permissions: contents: read`, no environment, no OIDC token) and `deploy-frontend` (downloads the artifact, configures AWS credentials, uploads to Amplify; installs and builds nothing, no checkout).
 - `.gitignore` ignores `*.zip`.
-- §5 step 1 of the rollout covers an existing GitHub repository: the only rule is that `.github/workflows/ci-cd.yml` must not reach GitHub before the `production` environment and its `master`-only rule exist.
+- §5 step 1 of the rollout covers an existing GitHub repository: the only rule is that `.github/workflows/ci-cd.yml` must not reach GitHub before the `production` environment and its `main`-only rule exist.
