@@ -1,4 +1,6 @@
-/** "Take photo" (camera) and "Choose photo" (gallery) buttons backed by hidden file inputs. */
+import { icon } from "./icons";
+
+/** Camera and gallery buttons backed by hidden file inputs. */
 export function createCapture(root: HTMLElement, onFile: (file: File) => void): void {
   const add = (label: string, camera: boolean) => {
     const input = document.createElement("input");
@@ -13,11 +15,11 @@ export function createCapture(root: HTMLElement, onFile: (file: File) => void): 
     });
     const button = document.createElement("button");
     button.type = "button";
-    button.className = camera ? "primary full" : "secondary full";
-    button.textContent = label;
+    button.className = camera ? "primary full cta" : "secondary full cta";
+    button.append(icon(camera ? "camera" : "image", { size: camera ? 20 : 16 }), label);
     button.addEventListener("click", () => input.click());
     root.append(input, button);
   };
-  add("Take photo", true);
-  add("Choose photo", false);
+  add("Scan Page with Camera", true);
+  add("Upload from Gallery", false);
 }

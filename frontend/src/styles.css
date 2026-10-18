@@ -671,3 +671,162 @@ input[type="password"] {
     transform: translateY(0);
   }
 }
+
+/* Empty and scanning states (UI v2) */
+.empty {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.hero-wrap {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 8rem;
+  height: 8rem;
+  border: 2px dashed #c7d2fe;
+  border-radius: 1.5rem;
+  background: var(--indigo-50);
+  box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.06);
+}
+.hero-icon {
+  color: var(--indigo-600);
+  stroke-width: 1.5;
+  animation: soft-pulse 2s infinite ease-in-out;
+}
+.tag {
+  position: absolute;
+  right: -0.5rem;
+  bottom: -0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border: 1px solid #fde047;
+  border-radius: 0.75rem;
+  background: #fef08a;
+  color: var(--slate-800);
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
+}
+.tag svg {
+  color: var(--indigo-600);
+}
+.empty-title {
+  margin: 0.5rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--slate-900);
+}
+.empty-text {
+  max-width: 17.5rem;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--slate-500);
+}
+.empty .actions {
+  width: 100%;
+  margin-top: 1rem;
+}
+.cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1.25rem;
+}
+.cta.secondary {
+  padding: 0.75rem 1.25rem;
+  border: 1px solid var(--slate-200);
+  background: #fff;
+}
+.scanning {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.scan-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16rem;
+  height: 20rem;
+  overflow: hidden;
+  border: 2px solid #818cf8;
+  border-radius: 1rem;
+  background: var(--slate-900);
+  box-shadow: 0 25px 50px rgba(15, 23, 42, 0.25);
+}
+.scan-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.45;
+}
+.laser {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0.25rem;
+  background: linear-gradient(to right, transparent, var(--indigo-600), transparent);
+  box-shadow: 0 0 0.9375rem var(--indigo-600);
+  animation: scan-line 2s infinite ease-in-out;
+}
+.scan-pill {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.scan-pill svg {
+  color: #818cf8;
+}
+.scan-caption {
+  margin: 1.5rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--slate-600);
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes scan-line {
+  0%,
+  100% {
+    top: 0;
+  }
+  50% {
+    top: 95%;
+  }
+}
+@keyframes soft-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.85;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

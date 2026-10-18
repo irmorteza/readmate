@@ -7,17 +7,21 @@ function pick(input: HTMLInputElement, file: File) {
 }
 
 describe("createCapture", () => {
-  it("offers Take photo (camera) and Choose photo (gallery) inputs", () => {
+  it("offers a camera button and a gallery button with icons", () => {
     const root = document.createElement("div");
     createCapture(root, () => {});
     const inputs = root.querySelectorAll<HTMLInputElement>("input[type=file]");
     expect(inputs).toHaveLength(2);
     expect([...inputs].map((i) => i.getAttribute("capture"))).toEqual(["environment", null]);
     expect([...inputs].every((i) => i.accept === "image/*")).toBe(true);
-    expect([...root.querySelectorAll("button")].map((b) => b.textContent)).toEqual([
-      "Take photo",
-      "Choose photo",
+    const buttons = [...root.querySelectorAll("button")];
+    expect(buttons.map((b) => b.textContent)).toEqual([
+      "Scan Page with Camera",
+      "Upload from Gallery",
     ]);
+    expect(buttons[0].classList.contains("primary")).toBe(true);
+    expect(buttons[1].classList.contains("secondary")).toBe(true);
+    expect(buttons.every((b) => b.querySelector("svg"))).toBe(true);
   });
 
   it("calls onFile with the picked file from either input", () => {
