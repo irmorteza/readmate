@@ -7,6 +7,7 @@ import {
   NO_TEXT_MESSAGE,
   type State,
 } from "./app";
+import { BUILD_SHA } from "./build-info";
 import { createCapture } from "./capture";
 import { prepareImage } from "./image";
 import { renderOverlay, type ZoomLevel } from "./overlay";
@@ -57,6 +58,7 @@ function settingsMenu(): HTMLElement {
     { class: "menu" },
     h("summary", { textContent: "Settings" }),
     button("Reset token", () => controller.resetToken()),
+    h("p", { class: "version", textContent: `Version ${BUILD_SHA}` }),
   );
 }
 
