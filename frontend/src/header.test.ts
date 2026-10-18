@@ -58,3 +58,20 @@ describe("watchOnlineStatus", () => {
     expect(badges.every((b) => b.textContent?.includes("Online"))).toBe(true);
   });
 });
+
+describe("diagnostics line", () => {
+  it("shows the viewport diagnostics in the settings menu when given", () => {
+    const header = renderHeader({
+      buildSha: "abc1234",
+      onResetToken: () => {},
+      diagnostics: "Page 980×800 · screen 412×900 @2x · touch · UI ×2.38",
+    });
+    const line = header.querySelector(".menu .diagnostics");
+    expect(line?.textContent).toBe("Page 980×800 · screen 412×900 @2x · touch · UI ×2.38");
+  });
+
+  it("omits it when not given", () => {
+    const header = renderHeader({ buildSha: "x", onResetToken: () => {} });
+    expect(header.querySelector(".diagnostics")).toBeNull();
+  });
+});

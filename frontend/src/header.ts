@@ -4,6 +4,8 @@ export interface HeaderOptions {
   buildSha: string;
   /** Shown as "Reset token" in the settings menu; omit while there is no token yet. */
   onResetToken?: () => void;
+  /** One line of viewport numbers under the version, for diagnosing layout problems. */
+  diagnostics?: string;
 }
 
 function applyStatus(el: HTMLElement, online: boolean): void {
@@ -11,7 +13,7 @@ function applyStatus(el: HTMLElement, online: boolean): void {
   el.replaceChildren(h("span", { class: "dot" }), online ? "Online" : "Offline");
 }
 
-export function renderHeader({ buildSha, onResetToken }: HeaderOptions): HTMLElement {
+export function renderHeader({ buildSha, onResetToken, diagnostics }: HeaderOptions): HTMLElement {
   const status = h("span", { attrs: { role: "status" } });
   applyStatus(status, navigator.onLine);
 
@@ -27,6 +29,7 @@ export function renderHeader({ buildSha, onResetToken }: HeaderOptions): HTMLEle
           { class: "menu-panel" },
           button("Reset token", onResetToken),
           h("p", { class: "version", textContent: `Version ${buildSha}` }),
+          ...(diagnostics ? [h("p", { class: "version diagnostics", textContent: diagnostics })] : []),
         ),
       ),
     );
