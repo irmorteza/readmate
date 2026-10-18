@@ -1,16 +1,15 @@
 import "./styles.css";
 import { postOcr } from "./api";
 import { createController, errorMessage, type State } from "./app";
-import { BUILD_SHA } from "./build-info";
 import { createCapture } from "./capture";
 import { button, h } from "./dom";
-import { renderHeader, watchOnlineStatus } from "./header";
+import { renderHeader } from "./header";
 import { prepareImage } from "./image";
 import { createResultView } from "./result-view";
 import { clearToken, getToken, saveToken } from "./settings";
 import { speak } from "./speech";
 import { createTranslationService } from "./translation";
-import { applyUiScale, describeViewport } from "./viewport";
+import { applyUiScale } from "./viewport";
 
 const root = document.getElementById("app")!;
 const translation = createTranslationService();
@@ -138,11 +137,8 @@ function render(state: State): void {
       screen = screenError(state);
       break;
   }
-  const header = renderHeader({
-    buildSha: BUILD_SHA,
-    onResetToken: state.kind === "needsToken" ? undefined : () => controller.resetToken(),
-    diagnostics: describeViewport(),
-  });
+  // Temporary until Task 11 mounts the drawer: the menu button does nothing yet.
+  const header = renderHeader({ onMenu: () => {}, onHome: () => controller.newPhoto() });
   root.replaceChildren(h("div", { class: "app" }, header, screen));
 }
 
@@ -150,6 +146,5 @@ applyUiScale();
 // Only the root font size changes on rotation or resize; the screen itself is not rebuilt, so the
 // open tab, selection and sheet survive the URL bar showing or hiding.
 window.addEventListener("resize", () => applyUiScale());
-watchOnlineStatus();
 controller.subscribe(render);
 render(controller.getState());

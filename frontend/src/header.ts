@@ -1,66 +1,27 @@
-import { button, h } from "./dom";
+import { h } from "./dom";
+import { icon } from "./icons";
 
 export interface HeaderOptions {
-  buildSha: string;
-  /** Shown as "Reset token" in the settings menu; omit while there is no token yet. */
-  onResetToken?: () => void;
-  /** One line of viewport numbers under the version, for diagnosing layout problems. */
-  diagnostics?: string;
+  onMenu: () => void;
+  onHome: () => void;
 }
 
-function applyStatus(el: HTMLElement, online: boolean): void {
-  el.className = `status ${online ? "online" : "offline"}`;
-  el.replaceChildren(h("span", { class: "dot" }), online ? "Online" : "Offline");
-}
-
-export function renderHeader({ buildSha, onResetToken, diagnostics }: HeaderOptions): HTMLElement {
-  const status = h("span", { attrs: { role: "status" } });
-  applyStatus(status, navigator.onLine);
-
-  const right = h("div", { class: "header-right" }, status);
-  if (onResetToken) {
-    right.append(
-      h(
-        "details",
-        { class: "menu" },
-        h("summary", { textContent: "⚙", attrs: { "aria-label": "Settings" } }),
-        h(
-          "div",
-          { class: "menu-panel" },
-          button("Reset token", onResetToken),
-          h("p", { class: "version", textContent: `Version ${buildSha}` }),
-          ...(diagnostics ? [h("p", { class: "version diagnostics", textContent: diagnostics })] : []),
-        ),
-      ),
-    );
-  }
-
-  return h(
-    "header",
-    { class: "app-header" },
-    h(
-      "div",
-      { class: "brand" },
-      h("div", { class: "logo", textContent: "RM" }),
-      h(
-        "div",
-        {},
-        h("h1", { textContent: "ReadMate" }),
-        h("span", { class: "tagline", textContent: "GERMAN ASSISTANT" }),
-      ),
-    ),
-    right,
+/** Compact fixed header: logo and title on the left, the menu button on the right. */
+export function renderHeader({ onMenu, onHome }: HeaderOptions): HTMLElement {
+  const logo = h("div", { class: "logo" }, icon("book-open-check", { size: 16 }));
+  const brand = h(
+    "button",
+    { type: "button", class: "brand", onclick: onHome, attrs: { "aria-label": "ReadMate home" } },
+    logo,
+    h("h1", { textContent: "ReadMate" }),
+    h("span", { class: "pwa-badge", textContent: "PWA" }),
   );
-}
-
-let watching = false;
-
-/** Keeps every Online/Offline badge on the page in step with the browser's connection state. */
-export function watchOnlineStatus(): void {
-  if (watching) return;
-  watching = true;
-  const update = (online: boolean) =>
-    document.querySelectorAll<HTMLElement>(".status").forEach((el) => applyStatus(el, online));
-  window.addEventListener("online", () => update(true));
-  window.addEventListener("offline", () => update(false));
+  const menu = h("button", {
+    type: "button",
+    class: "menu-button",
+    onclick: onMenu,
+    attrs: { "aria-label": "Open menu" },
+  });
+  menu.append(icon("menu", { size: 20 }));
+  return h("header", { class: "app-header" }, brand, menu);
 }
