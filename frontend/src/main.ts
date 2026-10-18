@@ -100,6 +100,7 @@ function screenIdle(): HTMLElement {
     );
     screen.append(hint);
   }
+  screen.append(h("footer", { class: "hint", textContent: "Deploy test – v1" }));
   return screen;
 }
 
