@@ -165,7 +165,7 @@
 
 ### Task 8: Owner-driven rollout (manual; not for an executor)
 
-- [ ] **Step 1:** Create the private GitHub repository `readmate` (empty, do **not** push yet) and add it as `origin`. Name it exactly as `GitHubRepo` will be given to the bootstrap stack; the trust condition is case-sensitive.
+- [ ] **Step 1:** Use the existing private GitHub repository `readmate` and add it as `origin` if the clone has no remote. Do **not** push yet: `.github/workflows/ci-cd.yml` must not reach GitHub before the `production` environment and its `master`-only rule exist. Name it exactly as `GitHubRepo` will be given to the bootstrap stack; the trust condition is case-sensitive.
 - [ ] **Step 2:** Create the `production` environment first: deployment branches = `master` only, secret `PILOT_TOKEN`. If a `production` environment already exists, add the branch rule to it before anything else (an environment auto-created by an early workflow run has no rule).
 - [ ] **Step 3:** Deploy the bootstrap stack with the §4 command (real `GitHubOwner` spelled exactly as on GitHub, SAM bucket from Task 1; `CreateOidcProvider=true`, or `false` if the account already has the GitHub provider, which must then list `sts.amazonaws.com` as a client id). Note `DeployRoleArn` and `OcrExecutionRoleArn`. Then switch the app stack over once from the laptop: `sam build` and `sam deploy` with all five parameters including `ExecutionRoleArn=<OcrExecutionRoleArn>`; CloudFormation replaces the auto-generated execution role.
 - [ ] **Step 4:** Add the eight environment variables from Global Constraints to `production`, then push all branches.

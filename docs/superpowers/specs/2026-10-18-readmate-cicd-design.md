@@ -229,3 +229,10 @@ An independent review of `infra/github-oidc.yaml` found that the §4.3 permissio
 - §6.5: the smoke test also sends a CORS preflight (`OPTIONS {api}/ocr` with `Origin: <FRONTEND_ORIGIN>`, `Access-Control-Request-Method: POST`, `Access-Control-Request-Headers: content-type,x-pilot-token`) and requires `Access-Control-Allow-Origin` to equal the frontend origin, so a deploy that the phone's browser would block fails the run.
 - §4/§8 `FrontendOrigin` has `AllowedPattern: '^https://[^/\s]+$'` (bare https origin, no trailing slash).
 - §5/§10 rollout order: create the repository, then the `production` environment with its `master`-only rule and `PILOT_TOKEN`, then deploy the bootstrap stack, then set the variables, and only then push. This avoids an auto-created, unprotected `production` environment.
+
+### Amendments before rollout
+
+- §6.3: `sam build` runs before `configure-aws-credentials`, so dependency installation never runs with AWS credentials present. (The job still has `id-token: write` at job level, so the OIDC request variables exist for every step of `deploy-backend`; a build/deploy job split would be needed to remove that.)
+- §6.4: split into `build-frontend` (checkout, `npm ci`, build, zip, upload artifact `site`; `permissions: contents: read`, no environment, no OIDC token) and `deploy-frontend` (downloads the artifact, configures AWS credentials, uploads to Amplify; installs and builds nothing, no checkout).
+- `.gitignore` ignores `*.zip`.
+- §5 step 1 of the rollout covers an existing GitHub repository: the only rule is that `.github/workflows/ci-cd.yml` must not reach GitHub before the `production` environment and its `master`-only rule exist.

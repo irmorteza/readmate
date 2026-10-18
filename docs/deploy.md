@@ -4,11 +4,12 @@
 
 `.github/workflows/ci-cd.yml` runs on every push to any branch and on manual dispatch:
 
-`test` (every push) → `deploy-backend` → `deploy-frontend` → `smoke-test` (only on `master`, only if the previous job passed).
+`test` (every push) → `deploy-backend` → `build-frontend` → `deploy-frontend` → `smoke-test` (everything after `test` only on `master`, only if the previous job passed).
 
 - **test:** ruff and pytest (backend), Vitest and `tsc` (frontend), `actionlint`, `cfn-lint`.
-- **deploy-backend:** assumes the AWS role through GitHub OIDC, `sam build`, `sam deploy` to stack `readmate`, reads the `FunctionUrl` stack output.
-- **deploy-frontend:** builds the PWA against that URL with the commit SHA, zips it, uploads it to the Amplify app through the manual-deployment API, waits for the job.
+- **deploy-backend:** `sam build` first (dependency installation runs before any AWS credentials exist), then assumes the AWS role through GitHub OIDC, `sam deploy` to stack `readmate`, and reads the `FunctionUrl` stack output.
+- **build-frontend:** `npm ci` and the build run here, with no secrets, no environment and no OIDC token, against that URL and the commit SHA; the zip is passed on as an artifact.
+- **deploy-frontend:** the only job with the OIDC token after the backend deploy; it downloads the zip and uploads it to the Amplify app through the manual-deployment API, then waits for the job. It installs and builds nothing.
 - **smoke-test:** a wrong-token request must get HTTP 401; the Amplify page must serve the ReadMate title and a bundle that contains the current API host and the commit SHA.
 
 No AWS keys are stored in GitHub. The only secret is `PILOT_TOKEN`; the workflow gets AWS credentials from a short-lived OIDC token that only the `production` environment (limited to `master`) can obtain.
@@ -21,7 +22,7 @@ After a deploy, the phone shows the short commit SHA under **Settings → Versio
 
 ### 2.1 GitHub repository and `production` environment (before pushing anything)
 
-1. Create the private repository `readmate` (empty; do not push yet) and add it as `origin`.
+1. **Use the existing repository `readmate`** (or create it if it does not exist yet). Confirm it is private and spelled exactly as `GitHubRepo` will be given to the bootstrap stack (the trust condition is case-sensitive), and add it as `origin` if the local clone has no remote (`git remote add origin <url>`). **Do not push yet.** The one rule: the workflow file `.github/workflows/ci-cd.yml` must not reach GitHub before the `production` environment and its `master`-only rule exist. If the repository already contains that file on any branch, or already shows a `production` environment, do step 2 immediately and add the rule before anything else.
 2. Settings → Environments → **New environment `production`**. If an environment named `production` already exists (for example a workflow ran before it was configured), edit it instead.
 3. **Deployment branches and tags:** Selected branches → `master` only. Do this first.
 4. **Environment secret:** `PILOT_TOKEN` (the same token the phone uses).

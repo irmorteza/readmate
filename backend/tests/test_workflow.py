@@ -51,8 +51,9 @@ def test_top_level_permissions_are_contents_read_only(workflow):
 def test_only_deploy_jobs_request_id_token(jobs):
     for name in DEPLOY_JOBS:
         assert jobs[name]["permissions"] == {"id-token": "write", "contents": "read"}
-    for name in ("test", "smoke-test"):
+    for name in ("test", "build-frontend", "smoke-test"):
         assert "id-token" not in jobs[name].get("permissions", {})
+    assert jobs["build-frontend"]["permissions"] == {"contents": "read"}
 
 
 def test_deploy_jobs_run_only_on_master_in_production_environment(jobs):
@@ -60,11 +61,14 @@ def test_deploy_jobs_run_only_on_master_in_production_environment(jobs):
         assert jobs[name]["if"] == MASTER_ONLY
         assert jobs[name]["environment"] == "production"
     assert "environment" not in jobs["test"]
+    assert jobs["build-frontend"]["if"] == MASTER_ONLY
+    assert "environment" not in jobs["build-frontend"]  # builds with no secrets and no AWS
 
 
 def test_job_order(jobs):
     assert jobs["deploy-backend"]["needs"] == "test"
-    assert jobs["deploy-frontend"]["needs"] == "deploy-backend"
+    assert jobs["build-frontend"]["needs"] == "deploy-backend"
+    assert jobs["deploy-frontend"]["needs"] == "build-frontend"
     assert sorted(jobs["smoke-test"]["needs"]) == ["deploy-backend", "deploy-frontend"]
 
 
@@ -131,16 +135,53 @@ def test_backend_job_exposes_non_empty_function_url_as_output(jobs):
     assert "GITHUB_OUTPUT" in step["run"]
 
 
-def test_frontend_job_builds_against_current_backend_and_commit(jobs):
-    job = jobs["deploy-frontend"]
+def test_frontend_build_job_builds_against_current_backend_and_commit(jobs):
+    job = jobs["build-frontend"]
     build = next(s for s in steps(job) if "VITE_API_URL" in s.get("env", {}))
     assert build["env"]["VITE_API_URL"] == "${{ needs.deploy-backend.outputs.api_url }}"
     assert build["env"]["VITE_BUILD_SHA"] == "${{ github.sha }}"
     text = run_text(job)
+    for needle in ("npm ci", "npm run build", "zip -r ../site.zip .", "unzip -Z1", "index.html"):
+        assert needle in text, needle
+
+
+def test_zip_is_handed_over_as_an_artifact(jobs):
+    upload = next(
+        s for s in steps(jobs["build-frontend"]) if "upload-artifact" in s.get("uses", "")
+    )
+    download = next(
+        s for s in steps(jobs["deploy-frontend"]) if "download-artifact" in s.get("uses", "")
+    )
+    assert upload["with"]["name"] == download["with"]["name"] == "site"
+    assert upload["with"]["path"] == "frontend/site.zip"
+    assert upload["with"]["if-no-files-found"] == "error"
+    assert download["with"]["path"] == "artifact"
+    assert "artifact/site.zip" in run_text(jobs["deploy-frontend"])
+
+
+def test_jobs_holding_the_oidc_token_install_and_build_nothing(jobs):
+    # deploy-frontend only downloads the artifact and talks to Amplify.
+    frontend = jobs["deploy-frontend"]
+    text = run_text(frontend)
+    for forbidden in ("npm", "pip install", "sam build"):
+        assert forbidden not in text, forbidden
+    for step in steps(frontend):
+        uses = step.get("uses", "")
+        assert "setup-node" not in uses and "setup-python" not in uses and "checkout" not in uses
+    # deploy-backend builds (which installs dependencies) before any AWS credentials exist.
+    backend_steps = steps(jobs["deploy-backend"])
+    build = next(i for i, s in enumerate(backend_steps) if s.get("run", "").startswith("sam build"))
+    creds = next(
+        i for i, s in enumerate(backend_steps) if "configure-aws-credentials" in s.get("uses", "")
+    )
+    deploy = next(i for i, s in enumerate(backend_steps) if "sam deploy" in s.get("run", ""))
+    assert build < creds < deploy
+
+
+def test_frontend_deploy_job_talks_to_amplify_and_polls(jobs):
+    job = jobs["deploy-frontend"]
+    text = run_text(job)
     for needle in (
-        "zip -r ../site.zip .",
-        "unzip -Z1",
-        "index.html",
         "amplify create-deployment",
         "curl --fail",
         "amplify start-deployment",

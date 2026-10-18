@@ -9,3 +9,4 @@ __pycache__/
 sample/
 samconfig.toml
 *.local
+*.zip
