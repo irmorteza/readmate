@@ -3,11 +3,14 @@ import type { OcrBox, OcrResult, OcrWord } from "./contract";
 import { button, h } from "./dom";
 import { renderOverlay, type ZoomLevel } from "./overlay";
 import { createSelection } from "./selection";
-import type { TranslationService, WordInfo } from "./translation";
+import type { TranslationService } from "./translation";
+import { createWordSheet } from "./word-sheet";
 
 export interface ResultViewDeps {
   translation: TranslationService;
   onNewPhoto: () => void;
+  speak: (text: string) => void;
+  comingSoon: (label: string) => void;
 }
 
 const LEADING = /^[»«„“”"'‘’(\[]+/u;
@@ -20,75 +23,6 @@ function displayText(word: OcrWord, boxes: Map<number, OcrBox>): string {
   if (!first || !last) return word.text;
   if (first === last) return first.raw;
   return (first.raw.match(LEADING)?.[0] ?? "") + word.text + (last.raw.match(TRAILING)?.[0] ?? "");
-}
-
-function createSheet(onClose: () => void) {
-  const wordEl = h("h2", { class: "sheet-word" });
-  const metaEl = h("p", { class: "sheet-meta" });
-  const translationEl = h("p", { class: "translation" });
-  const exampleEl = h("p", { class: "example" });
-
-  const element = h(
-    "div",
-    { class: "sheet", hidden: true, attrs: { role: "dialog", "aria-label": "Translation" } },
-    h("div", { class: "handle", onclick: onClose }),
-    h(
-      "div",
-      { class: "sheet-head" },
-      h("div", {}, wordEl, metaEl),
-      // Pronunciation and saving arrive with Phase 2; the controls are part of the design already.
-      h("button", {
-        type: "button",
-        class: "icon-button",
-        textContent: "🔊",
-        title: "Pronunciation (coming soon)",
-        attrs: { "aria-label": "Play pronunciation" },
-      }),
-    ),
-    h(
-      "div",
-      { class: "sheet-section" },
-      h("span", { class: "label", textContent: "English Translation" }),
-      translationEl,
-    ),
-    h(
-      "div",
-      { class: "sheet-section example-box" },
-      h("span", { class: "label", textContent: "Context Example" }),
-      exampleEl,
-    ),
-    h(
-      "div",
-      { class: "sheet-actions" },
-      h("button", { type: "button", class: "primary grow", textContent: "🔖 Save Word" }),
-      button("Close", onClose, "secondary"),
-    ),
-  );
-
-  return {
-    element,
-    hide() {
-      element.hidden = true;
-    },
-    showLoading(word: string) {
-      wordEl.textContent = word;
-      metaEl.textContent = "…";
-      translationEl.textContent = "…";
-      exampleEl.textContent = "…";
-      element.hidden = false;
-    },
-    show(info: WordInfo) {
-      wordEl.textContent = info.word;
-      metaEl.textContent = `${info.pos} • ${info.phonetic}`;
-      translationEl.textContent = info.translation;
-      exampleEl.textContent = `"${info.exampleDe}"`;
-    },
-    showUnavailable() {
-      metaEl.textContent = "";
-      translationEl.textContent = "Translation unavailable";
-      exampleEl.textContent = "";
-    },
-  };
 }
 
 export function createResultView(
@@ -111,7 +45,11 @@ export function createResultView(
   const wordSpans = new Map<number, HTMLElement>();
   const boxes = new Map(result.boxes.map((b) => [b.id, b]));
 
-  const sheet = createSheet(() => selection.clear());
+  const sheet = createWordSheet({
+    speak: deps.speak,
+    comingSoon: deps.comingSoon,
+    onClose: () => selection.clear(),
+  });
   const selection = createSelection(result, ({ word, lineTexts }) => {
     const mine = ++lookupId;
     sheet.showLoading(word.text);
@@ -204,5 +142,5 @@ export function createResultView(
   );
   setTab("text");
 
-  return h("section", { class: "screen" }, tabBar, textPane, imagePane, newPhoto, sheet.element);
+  return h("section", { class: "screen" }, tabBar, textPane, imagePane, newPhoto, sheet.backdrop, sheet.element);
 }

@@ -18,9 +18,14 @@ function service(lookup?: TranslationService["lookup"]): TranslationService & { 
 
 function mount(result = gappedResult, translation: TranslationService = service()) {
   const onNewPhoto = vi.fn();
-  const view = createResultView({ result, imageUrl: "blob:img" }, { translation, onNewPhoto });
+  const speak = vi.fn();
+  const comingSoon = vi.fn();
+  const view = createResultView(
+    { result, imageUrl: "blob:img" },
+    { translation, onNewPhoto, speak, comingSoon },
+  );
   document.body.replaceChildren(view);
-  return { view, onNewPhoto, translation };
+  return { view, onNewPhoto, translation, speak, comingSoon };
 }
 
 const pane = (name: string) => document.querySelector<HTMLElement>(`[data-pane="${name}"]`)!;
@@ -91,11 +96,13 @@ describe("translation sheet", () => {
     await vi.waitFor(() => expect(text(".translation")).toBe("Translated war"));
     expect(sheet().hidden).toBe(false);
     expect(text(".sheet-word")).toBe("war");
-    expect(text(".sheet-meta")).toBe("Noun (der) • /ipa/");
-    expect(text(".example")).toContain("Example for war");
+    expect(text(".pos")).toBe("Noun (der)");
+    expect(text(".phonetic")).toBe("/ipa/");
+    expect(text(".example-de")).toBe("Example for war");
+    expect(text(".example-en")).toBe("Translated example for war");
     expect(sheet().textContent).toContain("English Translation");
-    expect(sheet().textContent).toContain("Context Example");
-    expect(sheet().textContent).toContain("Save Word");
+    expect(sheet().textContent).toContain("Example Sentence");
+    expect(sheet().textContent).toContain("Save to Flashcards");
   });
 
   it("shows the word at once and placeholders until the lookup resolves", async () => {
@@ -154,12 +161,59 @@ describe("translation sheet", () => {
     mount();
     word(9).click();
     await vi.waitFor(() => expect(text(".translation")).toBe("Translated war"));
-    [...sheet().querySelectorAll("button")].find((b) => b.textContent === "Close")!.click();
+    sheet().querySelector<HTMLElement>('button[aria-label="Close"]')!.click();
     expect(sheet().hidden).toBe(true);
     expect(word(9).classList.contains("selected")).toBe(false);
     word(9).click();
     sheet().querySelector<HTMLElement>(".handle")!.click();
     expect(sheet().hidden).toBe(true);
+  });
+});
+
+describe("sheet backdrop and wiring", () => {
+  const backdrop = () => document.querySelector<HTMLElement>(".sheet-backdrop")!;
+
+  it("shows a backdrop with the sheet and tapping it closes the sheet and clears the highlight", async () => {
+    mount();
+    expect(backdrop().hidden).toBe(true);
+    word(9).click();
+    expect(backdrop().hidden).toBe(false);
+    backdrop().click();
+    expect(sheet().hidden).toBe(true);
+    expect(backdrop().hidden).toBe(true);
+    expect(word(9).classList.contains("selected")).toBe(false);
+  });
+
+  it("closing the sheet while a lookup is pending does not reopen or refill it", async () => {
+    let resolve!: (v: WordInfo) => void;
+    mount(
+      gappedResult,
+      service(() => new Promise<WordInfo>((r) => (resolve = r))),
+    );
+    word(9).click();
+    backdrop().click();
+    resolve(info("war"));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(sheet().hidden).toBe(true);
+    expect(text(".translation")).not.toBe("Translated war");
+  });
+
+  it("the speaker button speaks the tapped word through the injected speak", async () => {
+    const { speak } = mount();
+    word(9).click();
+    await vi.waitFor(() => expect(text(".translation")).toBe("Translated war"));
+    sheet().querySelector<HTMLElement>('button[aria-label="Play pronunciation"]')!.click();
+    expect(speak).toHaveBeenCalledWith("war");
+  });
+
+  it("Save to Flashcards reports coming soon through the injected callback", () => {
+    const { comingSoon } = mount();
+    word(9).click();
+    [...sheet().querySelectorAll("button")]
+      .find((b) => b.textContent?.includes("Save to Flashcards"))!
+      .click();
+    expect(comingSoon).toHaveBeenCalledWith("Save to Flashcards");
   });
 });
 

@@ -8,6 +8,7 @@ import { renderHeader, watchOnlineStatus } from "./header";
 import { prepareImage } from "./image";
 import { createResultView } from "./result-view";
 import { clearToken, getToken, saveToken } from "./settings";
+import { speak } from "./speech";
 import { createTranslationService } from "./translation";
 import { applyUiScale, describeViewport } from "./viewport";
 
@@ -125,7 +126,13 @@ function render(state: State): void {
       screen = screenBusy(state.imageUrl);
       break;
     case "result":
-      screen = createResultView(state, { translation, onNewPhoto: () => controller.newPhoto() });
+      screen = createResultView(state, {
+        translation,
+        onNewPhoto: () => controller.newPhoto(),
+        // Temporary wiring until Task 11 composes the toast; speech is real already.
+        speak: (text) => void speak(text),
+        comingSoon: () => {},
+      });
       break;
     case "error":
       screen = screenError(state);

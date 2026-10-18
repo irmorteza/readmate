@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    test: { environment: "jsdom" },
+    test: { environment: "jsdom", css: true },
     plugins: [
       VitePWA({
         registerType: "autoUpdate",
