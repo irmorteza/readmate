@@ -29,6 +29,6 @@ export function describeViewport(win: Window = window): string {
   const touch = isCoarse(win) ? "touch" : "mouse";
   return (
     `Page ${win.innerWidth}×${win.innerHeight} · screen ${win.screen.width}×${win.screen.height}` +
-    ` @${win.devicePixelRatio}x · ${touch} · UI ×${Math.round(scale * 100) / 100}`
+    ` @${Math.round(win.devicePixelRatio * 100) / 100}x · ${touch} · UI ×${Math.round(scale * 100) / 100}`
   );
 }

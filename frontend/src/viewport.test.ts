@@ -60,4 +60,12 @@ describe("describeViewport", () => {
       "Page 980×800 · screen 412×900 @2x · touch · UI ×2.38",
     );
   });
+
+  it("rounds a noisy device pixel ratio", () => {
+    const win = fakeWindow(980, 412, true);
+    (win as unknown as { devicePixelRatio: number }).devicePixelRatio = 2.0000000596046448;
+    expect(describeViewport(win)).toContain("@2x");
+    (win as unknown as { devicePixelRatio: number }).devicePixelRatio = 2.625;
+    expect(describeViewport(win)).toContain("@2.63x");
+  });
 });

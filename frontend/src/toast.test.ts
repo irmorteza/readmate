@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import css from "./styles.css?raw";
 import { comingSoonMessage, createToaster } from "./toast";
 
 beforeEach(() => vi.useFakeTimers());
@@ -54,5 +55,20 @@ describe("toaster", () => {
 describe("comingSoonMessage", () => {
   it("formats the message for unimplemented features", () => {
     expect(comingSoonMessage("Saved Words")).toBe("Saved Words is coming soon");
+  });
+});
+
+describe("stacking", () => {
+  const zIndex = (selector: string) => {
+    const start = css.indexOf(`\n${selector} {`);
+    const rule = css.slice(start, css.indexOf("}", start));
+    return Number(rule.match(/z-index:\s*(\d+)/)?.[1]);
+  };
+
+  it("is stacked above the drawer, the sheet and the backdrop so coming-soon messages stay visible", () => {
+    const toast = zIndex(".toast");
+    expect(toast).toBeGreaterThan(zIndex(".drawer-overlay"));
+    expect(toast).toBeGreaterThan(zIndex(".sheet"));
+    expect(toast).toBeGreaterThan(zIndex(".sheet-backdrop"));
   });
 });
