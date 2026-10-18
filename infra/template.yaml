@@ -14,6 +14,9 @@ Parameters:
   AlertEmail:
     Type: String
     Description: Address that receives the budget alerts.
+  ExecutionRoleArn:
+    Type: String
+    Description: Lambda execution role, the OcrExecutionRoleArn output of the readmate-github-oidc stack.
   OcrEngine:
     Type: String
     Default: textract
@@ -38,11 +41,8 @@ Resources:
           OCR_ENGINE: !Ref OcrEngine
       LoggingConfig:
         LogGroup: !Ref OcrLogGroup
-      Policies:
-        - Statement:
-            - Effect: Allow
-              Action: textract:DetectDocumentText
-              Resource: "*"
+      # Created by the bootstrap stack (infra/github-oidc.yaml), so CI needs no IAM write access.
+      Role: !Ref ExecutionRoleArn
       FunctionUrlConfig:
         AuthType: NONE
         Cors:

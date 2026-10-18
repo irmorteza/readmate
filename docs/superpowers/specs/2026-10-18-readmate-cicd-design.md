@@ -214,3 +214,12 @@ On `ubuntu-latest`:
 | Supply-chain risk from third-party actions | Pinned SHAs + Dependabot. |
 | SAM artifact bucket grows with every deploy | Acceptable for the pilot (cents per month); revisit with an S3 lifecycle rule if it matters. |
 | Actions minutes on a private repo | Pipeline ~5–8 min per master push, well inside the free monthly quota for personal use. |
+## 12. Amendments after the security review of the bootstrap template (2026-10-18)
+
+An independent review of `infra/github-oidc.yaml` found that the §4.3 permissions let the deploy role rewrite itself (its name `readmate-github-deploy` matched `role/readmate-*`) and that `iam:CreateRole`/`PutRolePolicy` on app roles were admin-equivalent through the public function URL. Changes, which supersede §4.3 and §6.3 where they differ:
+
+- The deploy role is named `github-deploy-readmate`.
+- The Lambda execution role `readmate-ocr-execution` is created by the bootstrap stack. `infra/template.yaml` takes parameter `ExecutionRoleArn`; `sam deploy` passes it from the environment variable `OCR_EXECUTION_ROLE_ARN`.
+- The deploy role has no IAM write actions; its only IAM permission is `iam:PassRole` on that one role (`iam:PassedToService = lambda.amazonaws.com`).
+- Budget access is limited to `budget/<AppStackName>-*`; read-only `lambda:GetPolicy`, `GetRuntimeManagementConfig`, `GetFunctionCodeSigningConfig`, `GetFunctionRecursionConfig` and `logs:ListTagsForResource`, `ListTagsLogGroup` were added.
+- A compromised CI run can therefore still replace the function code, but only with the app's own permissions (Textract and logs).
