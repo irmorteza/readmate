@@ -65,12 +65,15 @@ export function createController(deps: ControllerDeps): Controller {
   let state: State = initialState(deps.getToken());
   const subscribers = new Set<(state: State) => void>();
   let lastResult: Extract<State, { kind: "result" }> | null = null;
+  // Bumped whenever the user leaves or starts a scan; a scan that finishes under an older number
+  // was abandoned and must not touch the screen or the stored result.
+  let generation = 0;
   const set = (next: State) => {
     state = next;
     subscribers.forEach((fn) => fn(state));
   };
 
-  async function upload(blob: Blob, imageUrl: string): Promise<void> {
+  async function upload(blob: Blob, imageUrl: string, scan: number): Promise<void> {
     set({ kind: "uploading", blob, imageUrl });
     if (!deps.isOnline()) {
       set({ kind: "error", error: new AppError("offline"), blob, imageUrl });
@@ -78,9 +81,11 @@ export function createController(deps: ControllerDeps): Controller {
     }
     try {
       const result = await deps.postOcr(blob, deps.getToken() ?? "");
+      if (scan !== generation) return;
       lastResult = { kind: "result", blob, imageUrl, result };
       set(lastResult);
     } catch (e) {
+      if (scan !== generation) return;
       set({ kind: "error", error: toAppError(e), blob, imageUrl });
     }
   }
@@ -96,30 +101,37 @@ export function createController(deps: ControllerDeps): Controller {
     },
     resetToken() {
       deps.clearToken();
+      generation++;
       lastResult = null;
       set({ kind: "needsToken" });
     },
     async chooseFile(file) {
+      const scan = ++generation;
       set({ kind: "resizing" });
       let prepared: PreparedImage;
       try {
         prepared = await deps.prepareImage(file);
       } catch (e) {
+        if (scan !== generation) return;
         set({ kind: "error", error: toAppError(e) });
         return;
       }
-      await upload(prepared.blob, deps.createObjectURL(prepared.blob));
+      if (scan !== generation) return;
+      await upload(prepared.blob, deps.createObjectURL(prepared.blob), scan);
     },
     async retry() {
       if (state.kind !== "error" || !state.blob || !state.imageUrl) return;
-      await upload(state.blob, state.imageUrl);
+      await upload(state.blob, state.imageUrl, ++generation);
     },
     newPhoto() {
+      generation++;
       set({ kind: "idle" });
     },
     hasLastResult: () => lastResult !== null,
     showLastResult() {
-      if (lastResult) set(lastResult);
+      if (!lastResult) return;
+      generation++;
+      set(lastResult);
     },
   };
 }

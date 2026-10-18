@@ -1,5 +1,6 @@
 import { button, h } from "./dom";
 import { icon, type IconName } from "./icons";
+import { createModalFocus } from "./modal-focus";
 
 export interface DrawerDeps {
   version: string;
@@ -16,11 +17,14 @@ export interface Drawer {
 }
 
 export function createDrawer(deps: DrawerDeps): Drawer {
+  const focus = createModalFocus(() => close());
   const close = () => {
     element.hidden = true;
+    focus.release();
   };
   const open = () => {
     element.hidden = false;
+    focus.activate(closeButton);
   };
 
   const row = (iconName: IconName, label: string, onClick: () => void, soon = false) => {
@@ -96,7 +100,7 @@ export function createDrawer(deps: DrawerDeps): Drawer {
 
   const element = h(
     "div",
-    { class: "drawer-overlay", hidden: true, attrs: { role: "dialog", "aria-label": "Menu" } },
+    { class: "drawer-overlay", hidden: true, attrs: { role: "dialog", "aria-modal": "true", "aria-label": "Menu" } },
     panel,
     h("div", { class: "drawer-backdrop", onclick: close }),
   );

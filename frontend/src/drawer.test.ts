@@ -87,3 +87,56 @@ describe("drawer", () => {
     expect(drawer.element.textContent).not.toMatch(/\d+ new words/);
   });
 });
+
+describe("drawer dialog behavior", () => {
+  function opener() {
+    const b = document.createElement("button");
+    document.body.append(b);
+    b.focus();
+    return b;
+  }
+  const escape = () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+
+  it("is announced as a modal dialog", () => {
+    const { drawer } = make();
+    expect(drawer.element.getAttribute("aria-modal")).toBe("true");
+  });
+
+  it("opening focuses the close button and closing returns focus to the opener", () => {
+    const { drawer } = make();
+    const trigger = opener();
+    drawer.open();
+    expect(document.activeElement).toBe(drawer.element.querySelector('button[aria-label="Close menu"]'));
+    drawer.close();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("Escape closes it while open and is ignored afterwards", () => {
+    const { drawer } = make();
+    drawer.open();
+    escape();
+    expect(drawer.element.hidden).toBe(true);
+    const keep = opener();
+    escape();
+    expect(document.activeElement).toBe(keep);
+  });
+
+  it("closing twice or opening twice is harmless", () => {
+    const { drawer } = make();
+    const trigger = opener();
+    drawer.open();
+    drawer.open();
+    drawer.close();
+    drawer.close();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("does not fail when the opener has left the page", () => {
+    const { drawer } = make();
+    const trigger = opener();
+    drawer.open();
+    trigger.remove();
+    expect(() => drawer.close()).not.toThrow();
+  });
+});
+

@@ -974,3 +974,61 @@ input[type="password"] {
   border-radius: 50%;
   background: var(--indigo-600);
 }
+
+/* Long compounds must never widen the sheet (fix pass) */
+.sheet {
+  overflow-x: hidden;
+}
+.sheet-heading {
+  flex: 1;
+  min-width: 0;
+}
+.sheet-badges {
+  flex-wrap: wrap;
+}
+.phonetic,
+.pos,
+.translation,
+.example-de,
+.example-en {
+  overflow-wrap: anywhere;
+}
+.example-de {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Hit areas (fix pass): invisible padding so small controls still give a thumb about 44px,
+   without making the compact header, tabs or bottom bar taller. */
+.menu-button,
+.rescan,
+.sheet-close,
+.drawer-close,
+.toast-close,
+.icon-button,
+.tab,
+.nav-tab,
+.chip {
+  position: relative;
+}
+.menu-button::before,
+.rescan::before,
+.sheet-close::before,
+.drawer-close::before,
+.icon-button::before {
+  content: "";
+  position: absolute;
+  inset: -0.5rem;
+}
+.toast-close::before {
+  content: "";
+  position: absolute;
+  inset: -0.75rem;
+}
+.tab::before,
+.nav-tab::before,
+.chip::before {
+  content: "";
+  position: absolute;
+  inset: -0.625rem 0;
+}

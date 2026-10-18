@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import css from "./styles.css?raw";
+import { declarations } from "./test-css";
 import type { WordInfo } from "./translation";
 import { createWordSheet } from "./word-sheet";
 
@@ -117,3 +118,103 @@ describe("word sheet", () => {
     expect(rule).toContain("position: absolute");
   });
 });
+
+describe("long words in the sheet", () => {
+  it.each([".sheet-word", ".phonetic", ".pos", ".translation", ".example-de", ".example-en"])(
+    "%s may wrap anywhere so a long compound cannot widen the sheet",
+    (selector) => {
+      expect(declarations(selector)).toContain("overflow-wrap: anywhere");
+    },
+  );
+
+  it("the example text can shrink next to its speaker button", () => {
+    expect(declarations(".example-de")).toContain("min-width: 0");
+  });
+
+  it("the heading column and the badge row can shrink and wrap", () => {
+    expect(declarations(".sheet-heading")).toContain("min-width: 0");
+    expect(declarations(".sheet-badges")).toContain("flex-wrap: wrap");
+  });
+
+  it("the sheet never scrolls sideways", () => {
+    expect(declarations(".sheet")).toContain("overflow-x: hidden");
+  });
+
+  it("the heading column is part of the sheet markup", () => {
+    const { sheet } = make();
+    sheet.showLoading("Donaudampfschifffahrtsgesellschaftskapitaen");
+    expect(sheet.element.querySelector(".sheet-heading .sheet-word")).not.toBeNull();
+  });
+});
+
+describe("dialog behavior", () => {
+  function opener() {
+    const b = document.createElement("button");
+    b.textContent = "tapped word";
+    document.body.append(b);
+    b.focus();
+    return b;
+  }
+  const escape = () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+
+  it("is announced as a modal dialog", () => {
+    const { sheet } = make();
+    expect(sheet.element.getAttribute("aria-modal")).toBe("true");
+  });
+
+  it("opening moves focus into the sheet, onto the close button", () => {
+    const { sheet } = make();
+    opener();
+    sheet.showLoading("x");
+    expect(document.activeElement).toBe(sheet.element.querySelector('button[aria-label="Close"]'));
+  });
+
+  it("closing returns focus to whatever opened it", () => {
+    const { sheet } = make();
+    const trigger = opener();
+    sheet.showLoading("x");
+    sheet.hide();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("switching to another word keeps the original opener and does not steal focus again", () => {
+    const { sheet } = make();
+    const trigger = opener();
+    sheet.showLoading("one");
+    const close = sheet.element.querySelector<HTMLElement>('button[aria-label="Close"]')!;
+    const other = document.createElement("button");
+    document.body.append(other);
+    other.focus();
+    sheet.showLoading("two");
+    expect(document.activeElement).toBe(other);
+    sheet.hide();
+    expect(document.activeElement).toBe(trigger);
+    expect(close).toBeDefined();
+  });
+
+  it("does not fail when the opener has left the page", () => {
+    const { sheet } = make();
+    const trigger = opener();
+    sheet.showLoading("x");
+    trigger.remove();
+    expect(() => sheet.hide()).not.toThrow();
+  });
+
+  it("hide when already hidden does not move focus", () => {
+    const { sheet } = make();
+    const trigger = opener();
+    sheet.hide();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("Escape closes it while open and is ignored once closed", () => {
+    const { sheet, deps } = make();
+    sheet.showLoading("x");
+    escape();
+    expect(deps.onClose).toHaveBeenCalledTimes(1);
+    sheet.hide();
+    escape();
+    expect(deps.onClose).toHaveBeenCalledTimes(1);
+  });
+});
+

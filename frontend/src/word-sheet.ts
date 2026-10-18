@@ -1,5 +1,6 @@
 import { button, h } from "./dom";
 import { icon } from "./icons";
+import { createModalFocus } from "./modal-focus";
 import type { WordInfo } from "./translation";
 
 export interface WordSheetDeps {
@@ -59,14 +60,14 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
   const backdrop = h("div", { class: "sheet-backdrop", hidden: true, onclick: deps.onClose });
   const element = h(
     "div",
-    { class: "sheet", hidden: true, attrs: { role: "dialog", "aria-label": "Word details" } },
+    { class: "sheet", hidden: true, attrs: { role: "dialog", "aria-modal": "true", "aria-label": "Word details" } },
     h("div", { class: "handle", onclick: deps.onClose }),
     h(
       "div",
       { class: "sheet-header" },
       h(
         "div",
-        {},
+        { class: "sheet-heading" },
         h(
           "div",
           { class: "sheet-title" },
@@ -113,9 +114,12 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
     ),
   );
 
+  const focus = createModalFocus(deps.onClose);
   const setVisible = (visible: boolean) => {
     element.hidden = !visible;
     backdrop.hidden = !visible;
+    if (visible) focus.activate(closeButton);
+    else focus.release();
   };
 
   return {

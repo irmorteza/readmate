@@ -205,3 +205,105 @@ describe("last result", () => {
     expect(state.kind === "result" && state.result.engine).toBe("second");
   });
 });
+
+describe("leaving a scan", () => {
+  function deferred<T>() {
+    let resolve!: (v: T) => void;
+    let reject!: (e: unknown) => void;
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  }
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+
+  it("a result that arrives after New photo does not change the screen", async () => {
+    const slow = deferred<OcrResult>();
+    const c = createController(makeDeps({ postOcr: vi.fn().mockReturnValue(slow.promise) }));
+    const scan = c.chooseFile(file);
+    await tick();
+    c.newPhoto();
+    slow.resolve(result);
+    await scan;
+    expect(c.getState().kind).toBe("idle");
+    expect(c.hasLastResult()).toBe(false);
+  });
+
+  it("a scan that finishes while the user re-reads the previous page is dropped", async () => {
+    const second = deferred<OcrResult>();
+    const post = vi.fn().mockResolvedValueOnce(result).mockReturnValueOnce(second.promise);
+    const c = createController(makeDeps({ postOcr: post }));
+    await c.chooseFile(file); // page 1
+    const first = c.getState();
+    c.newPhoto();
+    const scan = c.chooseFile(file); // page 2 starts
+    await tick();
+    c.showLastResult(); // the user goes back to page 1
+    second.resolve({ ...result, engine: "second" } as OcrResult);
+    await scan;
+    expect(c.getState()).toBe(first);
+    c.newPhoto();
+    c.showLastResult();
+    const state = c.getState();
+    expect(state.kind === "result" && state.result.engine).toBe(result.engine);
+  });
+
+  it("the newest scan wins even when an older one finishes last", async () => {
+    const a = deferred<OcrResult>();
+    const b = deferred<OcrResult>();
+    const post = vi.fn().mockReturnValueOnce(a.promise).mockReturnValueOnce(b.promise);
+    const c = createController(makeDeps({ postOcr: post }));
+    const scanA = c.chooseFile(file);
+    await tick();
+    c.newPhoto();
+    const scanB = c.chooseFile(file);
+    await tick();
+    b.resolve({ ...result, engine: "B" } as OcrResult);
+    await scanB;
+    a.resolve({ ...result, engine: "A" } as OcrResult);
+    await scanA;
+    const state = c.getState();
+    expect(state.kind === "result" && state.result.engine).toBe("B");
+    c.newPhoto();
+    c.showLastResult();
+    const last = c.getState();
+    expect(last.kind === "result" && last.result.engine).toBe("B");
+  });
+
+  it("a failure that arrives after leaving does not show an error screen", async () => {
+    const slow = deferred<OcrResult>();
+    const c = createController(makeDeps({ postOcr: vi.fn().mockReturnValue(slow.promise) }));
+    const scan = c.chooseFile(file);
+    await tick();
+    c.newPhoto();
+    slow.reject(new AppError("generic"));
+    await scan;
+    expect(c.getState().kind).toBe("idle");
+  });
+
+  it("an image that finishes resizing after leaving is not uploaded", async () => {
+    const resizing = deferred<{ blob: Blob; width: number; height: number }>();
+    const deps = makeDeps({ prepareImage: vi.fn().mockReturnValue(resizing.promise) });
+    const c = createController(deps);
+    const scan = c.chooseFile(file);
+    await tick();
+    c.newPhoto();
+    resizing.resolve(prepared);
+    await scan;
+    expect(deps.postOcr).not.toHaveBeenCalled();
+    expect(c.getState().kind).toBe("idle");
+  });
+
+  it("resetting the token abandons a running scan", async () => {
+    const slow = deferred<OcrResult>();
+    const c = createController(makeDeps({ postOcr: vi.fn().mockReturnValue(slow.promise) }));
+    const scan = c.chooseFile(file);
+    await tick();
+    c.resetToken();
+    slow.resolve(result);
+    await scan;
+    expect(c.getState().kind).toBe("needsToken");
+    expect(c.hasLastResult()).toBe(false);
+  });
+});
