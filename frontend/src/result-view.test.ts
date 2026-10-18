@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createResultView } from "./result-view";
+import css from "./styles.css?raw";
 import { emptyResult, gappedResult } from "./test-fixtures";
 import type { TranslationService, WordInfo } from "./translation";
 
@@ -16,12 +17,16 @@ function service(lookup?: TranslationService["lookup"]): TranslationService & { 
   return { lookup: vi.fn(lookup ?? (async (word: string) => info(word))) };
 }
 
-function mount(result = gappedResult, translation: TranslationService = service()) {
+function mount(
+  result = gappedResult,
+  translation: TranslationService = service(),
+  extra: { pageLabel?: string; sentenceTranslation?: string } = {},
+) {
   const onNewPhoto = vi.fn();
   const speak = vi.fn();
   const comingSoon = vi.fn();
   const view = createResultView(
-    { result, imageUrl: "blob:img" },
+    { result, imageUrl: "blob:img", ...extra },
     { translation, onNewPhoto, speak, comingSoon },
   );
   document.body.replaceChildren(view);
@@ -58,6 +63,60 @@ describe("tabs", () => {
   });
 });
 
+describe("reader bar", () => {
+  it("has a rescan button that returns to the empty state through onNewPhoto", () => {
+    const { onNewPhoto } = mount();
+    const rescan = document.querySelector<HTMLButtonElement>("button.rescan")!;
+    expect(rescan.getAttribute("aria-label")).toBe("New photo");
+    rescan.click();
+    expect(onNewPhoto).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("word buttons", () => {
+  it("every word is a button", () => {
+    mount();
+    const words = [...document.querySelectorAll(".word")];
+    expect(words).toHaveLength(2);
+    expect(words.every((w) => w.tagName === "BUTTON")).toBe(true);
+  });
+
+  it("the stylesheet makes them thumb-sized and lets a long compound wrap", () => {
+    const rule = css.match(/\.word\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(rule).toContain("min-height: 2.75rem");
+    expect(rule).toContain("overflow-wrap: anywhere");
+    expect(rule).toContain("max-width: 100%");
+    const container = css.match(/\.words\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(container).toMatch(/gap:\s*0\.5/);
+  });
+
+  it("renders a very long German compound whole in one button", () => {
+    const result = structuredClone(gappedResult);
+    result.boxes[1].raw = "Donaudampfschifffahrtsgesellschaft";
+    mount(result);
+    expect(word(9).textContent).toBe("Donaudampfschifffahrtsgesellschaft");
+  });
+});
+
+describe("optional cards", () => {
+  it("shows neither the page label nor the sentence card by default", () => {
+    mount();
+    expect(document.querySelector(".page-label")).toBeNull();
+    expect(document.querySelector(".sentence-card")).toBeNull();
+  });
+
+  it("shows them when a value is provided", () => {
+    mount(gappedResult, service(), {
+      pageLabel: "Page 42 • Extracted Text",
+      sentenceTranslation: "Reading books expands vocabulary.",
+    });
+    expect(document.querySelector(".page-label")?.textContent).toBe("Page 42 • Extracted Text");
+    const card = document.querySelector(".sentence-card")!;
+    expect(card.textContent).toContain("Full Sentence Translation");
+    expect(card.textContent).toContain("Reading books expands vocabulary.");
+  });
+});
+
 describe("clean text", () => {
   it("renders one tappable span per word in reading order", () => {
     mount();
@@ -80,7 +139,8 @@ describe("clean text", () => {
 
   it("explains how to use it", () => {
     mount();
-    expect(pane("text").textContent).toContain("Tap any word to see translation");
+    expect(pane("text").textContent).toContain("Tap word for translation & audio");
+    expect(pane("text").querySelector(".badge")?.textContent).toBe("DE ➔ EN");
   });
 });
 
@@ -242,12 +302,6 @@ describe("other behavior", () => {
     expect(document.body.textContent).toContain(
       "No text found — try more light and hold the phone parallel to the page.",
     );
-    [...document.querySelectorAll("button")].find((b) => b.textContent?.includes("New photo"))!.click();
-    expect(onNewPhoto).toHaveBeenCalledTimes(1);
-  });
-
-  it("calls onNewPhoto from the result screen", () => {
-    const { onNewPhoto } = mount();
     [...document.querySelectorAll("button")].find((b) => b.textContent?.includes("New photo"))!.click();
     expect(onNewPhoto).toHaveBeenCalledTimes(1);
   });

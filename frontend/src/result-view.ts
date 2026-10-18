@@ -1,6 +1,7 @@
 import { isEmptyResult, NO_TEXT_MESSAGE } from "./app";
 import type { OcrBox, OcrResult, OcrWord } from "./contract";
 import { button, h } from "./dom";
+import { icon } from "./icons";
 import { renderOverlay, type ZoomLevel } from "./overlay";
 import { createSelection } from "./selection";
 import type { TranslationService } from "./translation";
@@ -25,11 +26,17 @@ function displayText(word: OcrWord, boxes: Map<number, OcrBox>): string {
   return (first.raw.match(LEADING)?.[0] ?? "") + word.text + (last.raw.match(TRAILING)?.[0] ?? "");
 }
 
-export function createResultView(
-  state: { result: OcrResult; imageUrl: string },
-  deps: ResultViewDeps,
-): HTMLElement {
-  const { result, imageUrl } = state;
+export interface ResultViewState {
+  result: OcrResult;
+  imageUrl: string;
+  /** Optional text for the card header, e.g. "Page 42"; omitted when not available. */
+  pageLabel?: string;
+  /** Optional full-sentence translation card; omitted when not available. */
+  sentenceTranslation?: string;
+}
+
+export function createResultView(state: ResultViewState, deps: ResultViewDeps): HTMLElement {
+  const { result, imageUrl, pageLabel, sentenceTranslation } = state;
   const newPhoto = button("New photo", deps.onNewPhoto, "secondary full");
 
   if (isEmptyResult(result)) {
@@ -69,7 +76,8 @@ export function createResultView(
   // Clean Text pane
   const words = h("div", { class: "words" });
   for (const word of result.words) {
-    const span = h("span", {
+    const el = h("button", {
+      type: "button",
       class: "word",
       textContent: displayText(word, boxes),
       onclick: (event: MouseEvent) => {
@@ -77,16 +85,38 @@ export function createResultView(
         selection.select(word.id);
       },
     });
-    span.dataset.wordId = String(word.id);
-    wordSpans.set(word.id, span);
-    words.append(span, " ");
+    el.dataset.wordId = String(word.id);
+    wordSpans.set(word.id, el);
+    words.append(el);
   }
   words.addEventListener("click", () => selection.clear());
+  const infoText = h("span", { class: "info-text" }, icon("info", { size: 14 }));
+  infoText.append("Tap word for translation & audio");
   const textPane = h(
     "div",
-    { class: "card", attrs: { "data-pane": "text" } },
-    h("p", { class: "caption", textContent: "Tap any word to see translation" }),
-    words,
+    { class: "text-pane", attrs: { "data-pane": "text" } },
+    h(
+      "div",
+      { class: "info-strip" },
+      infoText,
+      h("span", { class: "badge", textContent: "DE ➔ EN" }),
+    ),
+    h(
+      "div",
+      { class: "card reader-card" },
+      ...(pageLabel ? [h("h3", { class: "page-label", textContent: pageLabel })] : []),
+      words,
+      ...(sentenceTranslation
+        ? [
+            h(
+              "div",
+              { class: "sentence-card" },
+              h("strong", { textContent: "Full Sentence Translation:" }),
+              h("p", { textContent: sentenceTranslation }),
+            ),
+          ]
+        : []),
+    ),
   );
 
   // Smart Image pane
@@ -123,24 +153,36 @@ export function createResultView(
       tab.classList.toggle("active", active);
     }
   };
-  const tab = (name: "text" | "image", label: string) => {
+  const tab = (name: "text" | "image", iconName: "image" | "type", label: string) => {
     const el = h("button", {
       type: "button",
       class: "tab",
-      textContent: label,
       onclick: () => setTab(name),
       attrs: { role: "tab", "data-tab": name },
     });
+    el.append(icon(iconName, { size: 14 }), label);
     tabs.set(name, el);
     return el;
   };
-  const tabBar = h(
+  const rescan = h("button", {
+    type: "button",
+    class: "rescan",
+    onclick: deps.onNewPhoto,
+    attrs: { "aria-label": "New photo", title: "New photo" },
+  });
+  rescan.append(icon("refresh-cw", { size: 14 }));
+  const readerBar = h(
     "div",
-    { class: "tabs", attrs: { role: "tablist" } },
-    tab("image", "🖼️ Smart Image"),
-    tab("text", "📄 Clean Text"),
+    { class: "reader-bar" },
+    h(
+      "div",
+      { class: "segmented", attrs: { role: "tablist" } },
+      tab("image", "image", "Smart Image"),
+      tab("text", "type", "Clean Text"),
+    ),
+    rescan,
   );
   setTab("text");
 
-  return h("section", { class: "screen" }, tabBar, textPane, imagePane, newPhoto, sheet.backdrop, sheet.element);
+  return h("section", { class: "screen" }, readerBar, textPane, imagePane, sheet.backdrop, sheet.element);
 }
