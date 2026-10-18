@@ -114,7 +114,7 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
     ),
   );
 
-  const focus = createModalFocus(deps.onClose);
+  const focus = createModalFocus(deps.onClose, element);
   const setVisible = (visible: boolean) => {
     element.hidden = !visible;
     backdrop.hidden = !visible;

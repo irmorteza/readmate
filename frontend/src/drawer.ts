@@ -17,7 +17,6 @@ export interface Drawer {
 }
 
 export function createDrawer(deps: DrawerDeps): Drawer {
-  const focus = createModalFocus(() => close());
   const close = () => {
     element.hidden = true;
     focus.release();
@@ -104,5 +103,6 @@ export function createDrawer(deps: DrawerDeps): Drawer {
     panel,
     h("div", { class: "drawer-backdrop", onclick: close }),
   );
+  const focus = createModalFocus(() => close(), element);
   return { element, open, close };
 }

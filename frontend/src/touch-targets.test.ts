@@ -11,7 +11,7 @@ const AROUND = {
   ".icon-button": 0.5,
   ".toast-close": 0.75,
 } as const;
-const VERTICAL = { ".tab": 0.625, ".nav-tab": 0.625, ".chip": 0.625 } as const;
+const VERTICAL = { ".tab": 0.625, ".nav-tab": 0.625, ".chip": 0.625, ".word": 0.1875 } as const;
 
 const firstInsetRem = (body: string) => {
   const value = body.match(/inset:\s*(-?[\d.]+)rem/);

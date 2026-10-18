@@ -9,10 +9,17 @@ export interface ModalFocus {
   release(): void;
 }
 
-export function createModalFocus(onEscape: () => void): ModalFocus {
+export function createModalFocus(onEscape: () => void, dialog?: HTMLElement): ModalFocus {
   let active = false;
   let opener: HTMLElement | null = null;
+  const stop = () => {
+    active = false;
+    document.removeEventListener("keydown", onKey);
+    opener = null;
+  };
   const onKey = (event: KeyboardEvent) => {
+    // The screen is rebuilt on state changes; a dialog that left the page must not linger.
+    if (dialog && !dialog.isConnected) return stop();
     if (event.key === "Escape") onEscape();
   };
   return {
@@ -25,10 +32,9 @@ export function createModalFocus(onEscape: () => void): ModalFocus {
     },
     release() {
       if (!active) return;
-      active = false;
-      document.removeEventListener("keydown", onKey);
-      if (opener?.isConnected) opener.focus();
-      opener = null;
+      const back = opener;
+      stop();
+      if (back?.isConnected) back.focus();
     },
   };
 }

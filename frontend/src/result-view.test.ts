@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createResultView } from "./result-view";
-import css from "./styles.css?raw";
+import { declarations } from "./test-css";
 import { emptyResult, gappedResult } from "./test-fixtures";
 import type { TranslationService, WordInfo } from "./translation";
 
@@ -81,13 +81,10 @@ describe("word buttons", () => {
     expect(words.every((w) => w.tagName === "BUTTON")).toBe(true);
   });
 
-  it("the stylesheet makes them thumb-sized and lets a long compound wrap", () => {
-    const rule = css.match(/\.word\s*\{[^}]*\}/)?.[0] ?? "";
-    expect(rule).toContain("min-height: 2.75rem");
+  it("a long compound can still wrap inside the line", () => {
+    const rule = declarations(".word");
     expect(rule).toContain("overflow-wrap: anywhere");
     expect(rule).toContain("max-width: 100%");
-    const container = css.match(/\.words\s*\{[^}]*\}/)?.[0] ?? "";
-    expect(container).toMatch(/gap:\s*0\.5/);
   });
 
   it("renders a very long German compound whole in one button", () => {
@@ -311,5 +308,50 @@ describe("other behavior", () => {
     const labels = [...pane("image").querySelectorAll("button, label")].map((e) => e.textContent?.trim());
     expect(labels).toEqual(expect.arrayContaining(["Fit", "2×", "3×"]));
     expect(pane("image").textContent).toContain("Outlines");
+  });
+});
+
+describe("Clean Text reads like a continuous paragraph", () => {
+  it("lays the words out like running text with tight natural spacing", () => {
+    const words = declarations(".words");
+    expect(words).toContain("column-gap: 0.125rem");
+    expect(words).toContain("align-items: baseline");
+    expect(words).toContain("line-height: 1.625");
+    expect(words).toContain("flex-wrap: wrap");
+  });
+
+  it("an ordinary word has no border, shadow or background and only a hairline of padding", () => {
+    const word = declarations(".word");
+    expect(word).toContain("border: 0");
+    expect(word).toContain("background: transparent");
+    expect(word).toContain("padding: 0.125rem");
+    expect(word).not.toContain("box-shadow");
+    expect(word).not.toMatch(/border:\s*[12]px/);
+    expect(word).not.toContain("min-height");
+  });
+
+  it("feedback appears only while hovering or tapping a word", () => {
+    expect(declarations(".word:hover")).toContain("background: #e0e7ff");
+    expect(declarations(".word:hover")).toContain("color: var(--indigo-700)");
+    expect(declarations(".word:active")).toContain("background: #c7d2fe");
+  });
+
+  it("the selected word is a soft yellow highlight with a thin yellow ring and a dot", () => {
+    const selected = declarations(".word.selected");
+    expect(selected).toContain("background: #fef08a");
+    expect(selected).toContain("font-weight: 700");
+    expect(selected).toContain("box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.8)");
+    const dot = declarations(".word.selected::after");
+    expect(dot).toContain('content: ""');
+    expect(dot).toContain("border-radius: 50%");
+    expect(dot).toContain("var(--indigo-600)");
+  });
+
+  it("words are small, so each one gets an invisible hit area that tiles the line", () => {
+    expect(declarations(".word")).toContain("position: relative");
+    const before = declarations(".word::before");
+    expect(before).toContain('content: ""');
+    expect(before).toContain("position: absolute");
+    expect(before).toMatch(/inset:\s*-0\.1875rem/);
   });
 });
