@@ -28,13 +28,14 @@ export function createModalFocus(onEscape: () => void, dialog?: HTMLElement): Mo
       active = true;
       opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       document.addEventListener("keydown", onKey);
-      target.focus();
+      // preventScroll: the dialog may still be sliding in, and scrolling to it would shove the page.
+      target.focus({ preventScroll: true });
     },
     release() {
       if (!active) return;
       const back = opener;
       stop();
-      if (back?.isConnected) back.focus();
+      if (back?.isConnected) back.focus({ preventScroll: true });
     },
   };
 }

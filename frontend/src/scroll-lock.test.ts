@@ -13,3 +13,11 @@ describe("background scroll while a dialog is open", () => {
     expect(declarations(selector)).toContain("overscroll-behavior: contain");
   });
 });
+
+describe("the app container", () => {
+  it("can never be scrolled, not even by the browser bringing a focused element into view", () => {
+    // overflow: hidden still lets focus() scroll it; clip does not.
+    expect(declarations(".app-viewport-container")).toContain("overflow: clip");
+  });
+});
+

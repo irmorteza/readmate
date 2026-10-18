@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createModalFocus } from "./modal-focus";
 
 const escape = () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
@@ -32,3 +32,35 @@ describe("modal focus", () => {
     focus.release();
   });
 });
+
+describe("focus must not scroll the page", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("moves focus into the dialog without scrolling any ancestor", () => {
+    const focusSpy = vi.spyOn(HTMLElement.prototype, "focus");
+    const dialog = document.createElement("div");
+    const close = document.createElement("button");
+    dialog.append(close);
+    document.body.replaceChildren(dialog);
+    const focus = createModalFocus(() => {}, dialog);
+    focus.activate(close);
+    expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true });
+    focus.release();
+  });
+
+  it("gives focus back to the opener without scrolling either", () => {
+    const opener = document.createElement("button");
+    const dialog = document.createElement("div");
+    const close = document.createElement("button");
+    dialog.append(close);
+    document.body.replaceChildren(opener, dialog);
+    opener.focus();
+    const focus = createModalFocus(() => {}, dialog);
+    focus.activate(close);
+    const focusSpy = vi.spyOn(HTMLElement.prototype, "focus");
+    focus.release();
+    expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true });
+    expect(document.activeElement).toBe(opener);
+  });
+});
+

@@ -38,6 +38,8 @@ body {
   width: 100%;
   height: 100dvh;
   overflow: hidden;
+  /* clip, unlike hidden, cannot be scrolled programmatically (e.g. by focus() or scrollIntoView). */
+  overflow: clip;
   background: var(--slate-50);
 }
 .content {
