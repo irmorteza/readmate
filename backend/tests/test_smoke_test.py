@@ -21,6 +21,10 @@ class Site:
         self.routes = routes or {}
         self.post_status = post_status
         self.requests = []
+        self.preflights = []
+        # None echoes the request's Origin (a correctly configured Function URL);
+        # a string forces that value; "" sends no Access-Control-Allow-Origin header.
+        self.cors_origin = None
         site = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -33,6 +37,17 @@ class Site:
             def do_GET(self):
                 status, body = site.routes.get(self.path, (404, b"not found"))
                 self._send(status, body if isinstance(body, bytes) else body.encode())
+
+            def do_OPTIONS(self):
+                site.preflights.append((self.path, dict(self.headers)))
+                allow = site.cors_origin
+                if allow is None:
+                    allow = self.headers.get("Origin", "")
+                self.send_response(204)
+                if allow:
+                    self.send_header("Access-Control-Allow-Origin", allow)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
 
             def do_POST(self):
                 length = int(self.headers.get("Content-Length") or 0)
@@ -177,3 +192,37 @@ def test_main_returns_1_and_prints_failures_to_stderr(sites, capsys):
     assert code == 1
     assert "401" in captured.err
     assert "smoke test passed" not in captured.out
+
+
+def test_cors_preflight_asks_for_the_frontend_origin_method_and_headers(sites):
+    backend = sites(Site())
+    frontend = sites(good_frontend(backend.host))
+    assert run(backend, frontend) == []
+    path, headers = backend.preflights[0]
+    assert path == "/ocr"
+    assert headers["Origin"] == frontend.url  # no trailing slash
+    assert headers["Access-Control-Request-Method"] == "POST"
+    assert headers["Access-Control-Request-Headers"].lower() == "content-type,x-pilot-token"
+
+
+def test_cors_not_allowing_the_frontend_origin_is_reported(sites):
+    backend = sites(Site())
+    backend.cors_origin = "https://some-other-site.example"
+    frontend = sites(good_frontend(backend.host))
+    failures = run(backend, frontend)
+    assert len(failures) == 1
+    assert "CORS" in failures[0] and frontend.url in failures[0]
+
+
+def test_cors_header_missing_is_reported(sites):
+    backend = sites(Site())
+    backend.cors_origin = ""
+    frontend = sites(good_frontend(backend.host))
+    assert any("CORS" in f for f in run(backend, frontend))
+
+
+def test_cors_check_normalizes_a_trailing_slash_on_the_origin(sites):
+    backend = sites(Site())
+    frontend = sites(good_frontend(backend.host))
+    assert smoke_test.run_checks(backend.url, frontend.url + "/", SHA, timeout=3.0) == []
+    assert backend.preflights[0][1]["Origin"] == frontend.url

@@ -17,7 +17,18 @@ After a deploy, the phone shows the short commit SHA under **Settings → Versio
 
 ## 2. One-time setup
 
-### 2.1 Bootstrap stack (from your laptop, never from CI)
+**Order matters.** Create the protected `production` environment *before* the first push and before the bootstrap stack trusts it. GitHub auto-creates an environment that a job names but that does not exist yet, with no branch rule, and such an environment would let a job on any branch present the `environment:production` identity.
+
+### 2.1 GitHub repository and `production` environment (before pushing anything)
+
+1. Create the private repository `readmate` (empty; do not push yet) and add it as `origin`.
+2. Settings → Environments → **New environment `production`**. If an environment named `production` already exists (for example a workflow ran before it was configured), edit it instead.
+3. **Deployment branches and tags:** Selected branches → `master` only. Do this first.
+4. **Environment secret:** `PILOT_TOKEN` (the same token the phone uses).
+
+The environment variables are added in section 2.4, once the bootstrap outputs exist.
+
+### 2.2 Bootstrap stack (from your laptop, never from CI)
 
 `infra/github-oidc.yaml` creates the GitHub OIDC provider, the Lambda execution role `readmate-ocr-execution`, and the deploy role `github-deploy-readmate`. The deploy role has no IAM write permissions; its only IAM permission is passing the execution role to Lambda.
 
@@ -35,17 +46,13 @@ aws cloudformation deploy `
 - Use `CreateOidcProvider=false` if the account already has the GitHub provider; it must list `sts.amazonaws.com` as a client id.
 - Note the two outputs: `DeployRoleArn` and `OcrExecutionRoleArn`.
 
-### 2.2 Switch the app stack to the external execution role (once)
+### 2.3 Switch the app stack to the external execution role (once)
 
-The app stack takes the execution role as a parameter. Run the manual deploy from section 3 once with `ExecutionRoleArn=<OcrExecutionRoleArn>`; CloudFormation replaces the old auto-generated role.
+The app stack takes the execution role as a parameter. Run the manual deploy from section 3 once with `ExecutionRoleArn=<OcrExecutionRoleArn>`; CloudFormation replaces the old auto-generated role. Do this before the first CI deploy, because the CI role may not delete the old role.
 
-### 2.3 GitHub `production` environment
+### 2.4 Environment variables, then the first push
 
-Settings → Environments → **New environment `production`**:
-
-- **Deployment branches and tags:** Selected branches → `master` only.
-- **Environment secret:** `PILOT_TOKEN` (the same token the phone uses).
-- **Environment variables:**
+Add these **environment variables** to `production`:
 
 | Variable | Value |
 |---|---|
@@ -59,6 +66,8 @@ Settings → Environments → **New environment `production`**:
 | `ALERT_EMAIL` | your email |
 
 No repository-level secrets and no AWS access keys.
+
+Only now push all branches. The first run of the `master` workflow deploys.
 
 If a CI deploy fails with `AccessDenied`, add exactly the named action on the scoped resource to `infra/github-oidc.yaml` and redeploy the bootstrap stack from the laptop. Never widen to `"Action": "*"` or `AdministratorAccess`.
 

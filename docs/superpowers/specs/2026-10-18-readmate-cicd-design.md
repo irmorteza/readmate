@@ -223,3 +223,9 @@ An independent review of `infra/github-oidc.yaml` found that the §4.3 permissio
 - The deploy role has no IAM write actions; its only IAM permission is `iam:PassRole` on that one role (`iam:PassedToService = lambda.amazonaws.com`).
 - Budget access is limited to `budget/<AppStackName>-*`; read-only `lambda:GetPolicy`, `GetRuntimeManagementConfig`, `GetFunctionCodeSigningConfig`, `GetFunctionRecursionConfig` and `logs:ListTagsForResource`, `ListTagsLogGroup` were added.
 - A compromised CI run can therefore still replace the function code, but only with the app's own permissions (Textract and logs).
+
+### Amendments after the final review
+
+- §6.5: the smoke test also sends a CORS preflight (`OPTIONS {api}/ocr` with `Origin: <FRONTEND_ORIGIN>`, `Access-Control-Request-Method: POST`, `Access-Control-Request-Headers: content-type,x-pilot-token`) and requires `Access-Control-Allow-Origin` to equal the frontend origin, so a deploy that the phone's browser would block fails the run.
+- §4/§8 `FrontendOrigin` has `AllowedPattern: '^https://[^/\s]+$'` (bare https origin, no trailing slash).
+- §5/§10 rollout order: create the repository, then the `production` environment with its `master`-only rule and `PILOT_TOKEN`, then deploy the bootstrap stack, then set the variables, and only then push. This avoids an auto-created, unprotected `production` environment.

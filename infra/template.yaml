@@ -10,6 +10,8 @@ Parameters:
     Description: Shared secret sent by the app in the X-Pilot-Token header.
   FrontendOrigin:
     Type: String
+    AllowedPattern: '^https://[^/\s]+$'
+    ConstraintDescription: A bare https origin without a trailing slash, e.g. https://main.xxxx.amplifyapp.com
     Description: Origin of the deployed PWA, e.g. https://main.xxxx.amplifyapp.com (no trailing slash).
   AlertEmail:
     Type: String

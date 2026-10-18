@@ -240,3 +240,20 @@ def test_parameters_and_outputs(template):
     assert params["AmplifyBranch"]["Default"] == "staging"
     assert params["CreateOidcProvider"]["AllowedValues"] == ["true", "false"]
     assert set(template["Outputs"]) == {"DeployRoleArn", "OcrExecutionRoleArn"}
+
+
+def test_frontend_origin_parameter_only_accepts_a_bare_https_origin():
+    import re
+
+    pattern = load("template.yaml")["Parameters"]["FrontendOrigin"]["AllowedPattern"]
+    for good in ("https://staging.d2bhw8tobanmyi.amplifyapp.com", "https://example.com:8443"):
+        assert re.fullmatch(pattern, good), good
+    for bad in (
+        "https://staging.d2bhw8tobanmyi.amplifyapp.com/",  # never equals a browser Origin
+        "http://staging.d2bhw8tobanmyi.amplifyapp.com",
+        "https://example.com/path",
+        "https://exa mple.com",
+        "https://",
+        "",
+    ):
+        assert not re.fullmatch(pattern, bad), bad

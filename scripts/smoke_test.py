@@ -29,21 +29,21 @@ def _request(
     data: bytes | None = None,
     headers=None,
     timeout: float,
-) -> tuple[int, bytes]:
+) -> tuple[int, bytes, dict[str, str]]:
     req = urllib.request.Request(url, data=data, method=method, headers=headers or {})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.status, resp.read()
+            return resp.status, resp.read(), dict(resp.headers)
     except urllib.error.HTTPError as err:
-        return err.code, err.read()
+        return err.code, err.read(), dict(err.headers)
     except (urllib.error.URLError, OSError, ValueError) as err:
         raise CheckError(f"{method} {url} failed: {err}") from err
 
 
-def _check_backend(api_url: str, timeout: float) -> list[str]:
+def _check_backend(api_url: str, frontend_origin: str, timeout: float) -> list[str]:
     url = api_url.rstrip("/") + "/ocr"
     try:
-        status, _ = _request(
+        status, _, _ = _request(
             url,
             method="POST",
             data=b"smoke",
@@ -54,13 +54,40 @@ def _check_backend(api_url: str, timeout: float) -> list[str]:
         return [f"backend unreachable: {err}"]
     if status != 401:
         return [f"backend auth check: expected HTTP 401 for a bad token, got {status}"]
+    return _check_cors(url, frontend_origin.rstrip("/"), timeout)
+
+
+def _check_cors(url: str, origin: str, timeout: float) -> list[str]:
+    """The browser's preflight must be answered for the deployed frontend's origin."""
+    try:
+        _, _, headers = _request(
+            url,
+            method="OPTIONS",
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type,x-pilot-token",
+            },
+            timeout=timeout,
+        )
+    except CheckError as err:
+        return [f"backend CORS preflight failed: {err}"]
+    allowed = {k.lower(): v for k, v in headers.items()}.get(
+        "access-control-allow-origin"
+    )
+    if allowed != origin:
+        message = (
+            f"CORS: backend does not allow origin {origin} "
+            f"(Access-Control-Allow-Origin was {allowed!r}); the app would be blocked in the browser"
+        )
+        return [message]
     return []
 
 
 def _check_frontend(api_url: str, origin: str, sha: str, timeout: float) -> list[str]:
     origin = origin.rstrip("/")
     try:
-        status, body = _request(origin + "/", timeout=timeout)
+        status, body, _ = _request(origin + "/", timeout=timeout)
     except CheckError as err:
         return [f"frontend unreachable: {err}"]
     if status != 200:
@@ -76,7 +103,7 @@ def _check_frontend(api_url: str, origin: str, sha: str, timeout: float) -> list
         ]
     asset = match.group(0)
     try:
-        status, js_bytes = _request(origin + asset, timeout=timeout)
+        status, js_bytes, _ = _request(origin + asset, timeout=timeout)
     except CheckError as err:
         return failures + [f"frontend asset unreachable: {err}"]
     if status != 200:
@@ -99,7 +126,7 @@ def run_checks(
     api_url: str, frontend_origin: str, sha: str, timeout: float = 15.0
 ) -> list[str]:
     """Run every check; returns failure messages (empty list means all passed)."""
-    return _check_backend(api_url, timeout) + _check_frontend(
+    return _check_backend(api_url, frontend_origin, timeout) + _check_frontend(
         api_url, frontend_origin, sha, timeout
     )
 
