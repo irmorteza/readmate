@@ -1,7 +1,7 @@
 # ReadMate — UI v2 Design Spec
 
 - **Date:** 2026-10-18
-- **Status:** Draft — awaiting owner review
+- **Status:** Implemented (local commits on `main`, not deployed). §11 lists every change made during implementation and review; where it contradicts an earlier section, §11 wins.
 - **Path in repo:** `docs/superpowers/specs/2026-10-18-readmate-ui-v2-design.md`
 - **Builds on:** `docs/superpowers/specs/2026-10-17-wort-tap-design.md` (Phase 1; the project was renamed to ReadMate on 2026-10-18) and the UI redesign committed in `053dbce`.
 - **Inputs:** the designer's HTML mockup "ReadMate - Smart Reading & OCR Assistant", the designer's "UI/UX Implementation & Front-End Guidelines", and the designer's "UI/UX Alignment & Design System Spec".
@@ -16,7 +16,7 @@ This is a **UI-only** change. The OCR flow, the API contract (`contract/`), the 
 
 1. The app visually follows the mockup and the guideline tables (colors, radii 12 px / 32 px, typography, compact header and footer) on a phone and, framed, on a desktop.
 2. On every touch device the app fills the whole screen (`100vw` × `100dvh`), also when the browser reports a wide viewport ("Desktop site"); the decorative device frame appears only on a real desktop (mouse, wide window).
-3. Every word in Clean Text is a button at least 44 px high, with `gap` that prevents hitting two words at once; the page has no horizontal scroll.
+3. Clean Text reads as one continuous paragraph (no boxes around ordinary words) in which every word is still a tappable button with an invisible hit area that tiles the line (§11.1); the page has no horizontal scroll.
 4. Real behavior stays real: camera and gallery capture, OCR through the existing API, shared word selection between both tabs, the word sheet (the Phase 1 "Copy" button is replaced by the sheet's actions), German pronunciation through the browser's speech synthesis.
 5. Nothing is loaded from a CDN at runtime: icons are inline SVG, fonts are the system stack, CSS is local; the PWA works offline.
 6. All existing flows and tests keep working; new behavior is covered by tests.
@@ -58,7 +58,7 @@ State machine and controller (`app.ts`) are unchanged: `needsToken → idle → 
 
 **Smart Image pane:** the existing overlay (percent-positioned boxes, shared selection) plus its toolbar (Fit, 2×, 3×, Outlines).
 
-**Clean Text pane:** card with an info strip ("Tap word for translation & audio", badge "DE ➔ EN"), optional page indicator in the card header, the words as bordered buttons (`font-sans`, 18–20 px, `min-height: 44px`, `gap: 8–10px`), the selected word in `#FEF08A` with a `#FACC15` border, and the optional sentence card at the bottom. Words are the merged words of the OCR result in reading order, with their outer punctuation, exactly as in the current Clean Text.
+**Clean Text pane:** card with an info strip ("Tap word for translation & audio", badge "DE ➔ EN"), optional page indicator in the card header, the words as borderless buttons that flow like a book paragraph (§11.1), the selected word in `#FEF08A` with a thin `#FACC15` ring, and the optional sentence card at the bottom. Words are the merged words of the OCR result in reading order, with their outer punctuation, exactly as in the current Clean Text.
 
 ## 5. Components
 
@@ -126,10 +126,10 @@ Vitest with jsdom, in the existing style:
 - `word-sheet`: loading placeholders, filled state, unavailable state, backdrop/handle/close all close, `max-height` class present, speaker buttons call `speak` with the word and with the German example.
 - `speech`: calls `speechSynthesis.speak` with `de-DE`, cancels a running utterance first, returns false without support.
 - `translation`: dictionary hit, fallback generator for unknown words, defaults not mutated.
-- `result-view`: segmented control default and switching, word buttons (`min-height` style class), optional page indicator and sentence card absent by default and present when provided, shared selection between the panes (existing tests adapted).
+- `result-view`: segmented control default and switching, word buttons whose stylesheet rules (§11.1) are pinned by CSS guard tests, optional page indicator and sentence card absent by default and present when provided, shared selection between the panes (existing tests adapted).
 - `main` composition is verified visually, as in the previous UI work.
 
-Visual verification with `.\run.cmd -Engine fake` at 390 px width and in the desktop frame (screenshots), plus the designer's checklist: no horizontal scroll (`scrollWidth ≤ clientWidth`), word buttons ≥ 44 px (measured), backdrop closes the sheet, safe-area CSS present. Real-device checks (notch, thumb tapping) stay with the owner.
+Visual verification with `.\run.cmd -Engine fake` at 390 px width and in the desktop frame (screenshots), plus the designer's checklist: no horizontal scroll (`scrollWidth ≤ clientWidth`), the page does not shift when the sheet or the drawer opens (`scrollTop` of the container stays 0), backdrop closes the sheet, safe-area CSS present. Real-device checks (notch, thumb tapping) stay with the owner.
 
 ## 10. Risks
 
@@ -139,4 +139,52 @@ Visual verification with `.\run.cmd -Engine fake` at 390 px width and in the des
 | `lucide` is a new dependency | Only icon data is imported (tree-shaken); version pinned by the lockfile; Dependabot is limited to GitHub Actions today, so bumps are manual. |
 | Dummy dictionary words look like real translations | Documented in code and spec as UI mock data; the service boundary makes the later replacement local. |
 | Wide-viewport phones | Touch full-screen rule plus the existing UI scaling and diagnostics line; the owner's diagnostics screenshot confirms the cause. |
-| 187 word buttons per page make Clean Text long | Per the design; internal scroll in `main`. |
+| 187 word buttons per page make Clean Text long | With the paragraph layout (§11.1) the text is compact; internal scroll in `main`. |
+
+## 11. Amendments after implementation and review (2026-10-18 / 2026-10-19)
+
+These changes were made while building the UI, during the independent whole-branch review (Opus 5.5) and after the owner tried the app. They supersede earlier sections where they differ.
+
+### 11.1 Clean Text is a continuous paragraph (owner/designer instruction)
+
+Replaces the "bordered buttons, `min-height: 44px`" design of §4.
+
+- `.words`: flex, wrap, `align-items: baseline`, `column-gap: 0.125rem`, `row-gap: 0.375rem`, `line-height: 1.625`, font size 1.25rem.
+- Ordinary word (`.word`): `border: 0`, `background: transparent`, `padding: 0.125rem`, no shadow, `font-sans` 1.125rem, `overflow-wrap: anywhere`, `max-width: 100%`.
+- Feedback only while hovering or tapping: `:hover` background `#e0e7ff` and text indigo-700; `:active` background `#c7d2fe`.
+- Selected word: background `#FEF08A`, bold, a 1 px ring `rgba(250, 204, 21, 0.8)` drawn with `box-shadow` (the box size does not change, so neighbours do not jump), padding `0.125rem 0.375rem`, and a small indigo dot after the word (`::after`).
+- Because words are small, each gets an invisible hit area (`::before`, `inset: -0.1875rem -0.0625rem`) that tiles the line without overlapping: about 39 px high. This is below 44 px and was accepted by the owner's instruction; narrow words such as "ich" stay about 20 px wide.
+
+### 11.2 Controller: last result and abandoned scans
+
+- `Controller.hasLastResult()` and `showLastResult()` exist so the Reader tab can return to the last result. The last result survives New photo, is replaced by a newer result and is dropped when the token is reset. A result is stored even when it has no words (deferred minor).
+- A generation counter makes a scan that the user left (New photo, Scan, Reader, Reset token, a newer scan) irrelevant: its result or error is dropped, it is not stored as the last result, and an image that finishes resizing afterwards is not uploaded. The older of two scans can no longer overwrite the newer one.
+
+### 11.3 Dialogs (word sheet and drawer)
+
+- Both are `role="dialog"` with `aria-modal="true"`. `modal-focus.ts` moves focus to the close button on open, returns it to the opener on close, closes on Escape, and stops reacting when the dialog has been removed from the page by a re-render.
+- **Page jump bug:** focusing the close button of a dialog that was still sliding in made the browser scroll the clipped app container (the header and text moved up by up to 475 px and came back after the animation). Focus now uses `preventScroll: true` and `.app-viewport-container` uses `overflow: clip`, which cannot be scrolled programmatically. The container's `scrollTop` stays 0 when a dialog opens.
+- The content behind an open dialog does not scroll (`.app-viewport-container:has(.sheet:not([hidden])) .content` and the drawer equivalent get `overflow: hidden`); `.sheet` and `.drawer-panel` use `overscroll-behavior: contain`.
+- Stacking order inside the container: header 30 < sheet backdrop 40 < sheet 50 < drawer 70 < toast 80 (the toast must stay visible above the drawer).
+
+### 11.4 Word sheet details
+
+- Long compounds cannot widen the sheet: `overflow-wrap: anywhere` on word, phonetic, part of speech, translation and examples; `min-width: 0` on the heading column and the German example; badges wrap; the sheet never scrolls sideways.
+- Opens at once with placeholders, ignores late lookups after closing or after another word was tapped (as designed), and has no exit animation (deferred).
+
+### 11.5 Touch targets of small controls
+
+Menu, rescan, sheet close, drawer close, speaker buttons, toast close, segmented tabs, bottom-navigation tabs and zoom chips keep their compact visual size but get an invisible `::before` hit area (about 44 px) without changing the layout. The header, tab and footer padding limits of the designer's guidelines still hold.
+
+### 11.6 Smaller changes
+
+- The viewport diagnostics line rounds the device pixel ratio to two decimals; the drawer navigation sits directly under its header with the footer pinned to the bottom.
+- `WordInfo` is `{ word, phonetic, pos, translation, exampleDe, exampleEn }`; `DUMMY_DICTIONARY` is frozen and the lookup uses `Object.hasOwn`.
+- Lucide icon names were mapped to the installed package's canonical exports (`loader` → `LoaderCircle`, `sliders` → `SlidersHorizontal`, `check-circle` → `CircleCheck`); `lucide` is a devDependency and only the used icons are bundled. The build contains no external host.
+- Tests: vitest runs with `css: true` so CSS guard tests can read `styles.css?raw`; `test-css.ts` provides the `declarations(selector)` helper.
+
+### 11.7 Known deviations and deferred items
+
+- In the desktop frame the sheet cap is `85dvh` of the window, not 85 % of the 828 px frame; touch devices are identical.
+- No sheet exit animation; low contrast of slate-400 small text (inactive navigation labels about 2.6:1); live regions for scanning and the toast are not announced reliably; the whole container re-renders on every state change (the drawer closes when an upload finishes, focus drops to the page); safe areas are handled only at the top and bottom; object URLs of photos are never revoked; speech failures after the tap are silent; Android Back with a dialog open leaves the app; Reset token has no confirmation.
+- Verified in the Browser pane at 390 × 844 and in the desktop frame, not on a real phone.
