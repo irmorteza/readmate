@@ -17,4 +17,5 @@ Pushes to `main` deploy through GitHub Actions. See `docs/deploy.md` (pipeline, 
 
 - **API changes must be additive.** Every backend version must keep working with the previous frontend (installed PWAs cache old builds): add fields and routes; never remove or change the meaning of existing ones in the same release.
 - Never store AWS access keys or the pilot token in the repository or in GitHub outside the `production` environment secret. The CI deploy role has no IAM write permissions; keep it that way.
+- The Anthropic API key lives only in SSM Parameter Store as SecureString `/readmate/anthropic-api-key`; the Lambda reads it at runtime. Never put it in the repository, GitHub, CI, Lambda environment variables, logs or the frontend.
 - Do not deploy the bootstrap stack (`infra/github-oidc.yaml`) from CI or from an agent; the owner does it from the laptop.

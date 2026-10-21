@@ -10,6 +10,7 @@
 - **deploy-backend:** `sam build` first (dependency installation runs before any AWS credentials exist), then assumes the AWS role through GitHub OIDC, `sam deploy` to stack `readmate`, and reads the `FunctionUrl` stack output.
 - **build-frontend:** `npm ci` and the build run here, with no secrets, no environment and no OIDC token, against that URL and the commit SHA; the zip is passed on as an artifact.
 - **deploy-frontend:** the only job with the OIDC token after the backend deploy; it downloads the zip and uploads it to the Amplify app through the manual-deployment API, then waits for the job. It installs and builds nothing.
+- **word-info route:** `POST /v1/word-info` (lemma, translation and grammar of a tapped word, from the Anthropic API) deploys with the backend; it needs the one-time setup in section 2.5 and answers 503 until that is done.
 - **smoke-test:** a wrong-token request must get HTTP 401; the Amplify page must serve the ReadMate title and a bundle that contains the current API host and the commit SHA.
 
 No AWS keys are stored in GitHub. The only secret is `PILOT_TOKEN`; the workflow gets AWS credentials from a short-lived OIDC token that only the `production` environment (limited to `main`) can obtain.
@@ -48,7 +49,8 @@ aws cloudformation deploy `
 - When you redeploy this stack later, pass `CreateOidcProvider=true` again: the stack owns the provider, and `false` would delete it.
 - `<bucket>` is the `aws-sam-cli-managed-default-samclisourcebucket-…` name from the SAM stack outputs (`aws cloudformation describe-stacks --stack-name aws-sam-cli-managed-default --query "Stacks[0].Outputs"`).
 - Use `CreateOidcProvider=false` if the account already has the GitHub provider; it must list `sts.amazonaws.com` as a client id.
-- Note the two outputs: `DeployRoleArn` and `OcrExecutionRoleArn`.
+- Note the outputs: `DeployRoleArn`, `OcrExecutionRoleArn` and `WordInfoTableName`.
+- For later updates of an existing stack, do not pass `--parameter-overrides`. Unspecified parameters keep their current values. Use `--no-execute-changeset` and review the change set first (see the word-info section, 2.5). The full-parameter command above is only for the first creation.
 
 #### Finding the two numeric ids
 
@@ -96,6 +98,94 @@ No repository-level secrets and no AWS access keys.
 Only now push all branches. The first run of the `main` workflow deploys.
 
 If a CI deploy fails with `AccessDenied`, add exactly the named action on the scoped resource to `infra/github-oidc.yaml` and redeploy the bootstrap stack from the laptop. Never widen to `"Action": "*"` or `AdministratorAccess`.
+
+### 2.5 Word-info API: Anthropic key, table and permissions
+
+`POST /v1/word-info` calls the Anthropic API (Claude Haiku 5.5) from the Lambda. Do this once, in this order, before relying on the route. Until then OCR keeps working and word-info answers 503. Everything below is run by the owner from the laptop; CI and agents never run it.
+
+**Anthropic workspace and spend guards (in the Anthropic console):**
+
+1. Create a dedicated workspace for ReadMate and a key scoped to it.
+2. Set a workspace spend limit (recommended $10/month).
+3. Use prepaid credits with auto-reload off.
+
+**Commands (PowerShell, from the repo root).** Step 1 stores the key as SecureString `/readmate/anthropic-api-key`. Step 2 redeploys the bootstrap stack as change set, review, execute, and adds the `readmate-word-info` table and the execution role's permissions. Step 3 verifies. Step 4 is run after the backend is deployed.
+
+```powershell
+# 1. Store the API key (input is hidden and not saved in history; it is passed to the aws process
+#    for the duration of the call and never written to disk). Add --overwrite when rotating.
+$sec = Read-Host "Anthropic API key" -AsSecureString
+$key = [System.Net.NetworkCredential]::new("", $sec).Password
+aws ssm put-parameter --region eu-central-1 --name /readmate/anthropic-api-key --type SecureString --value $key
+Remove-Variable key, sec
+
+# 2a. Create (do NOT execute) a change set for the bootstrap stack. No --parameter-overrides: per the AWS CLI
+#     reference for `cloudformation deploy`, "If you're updating a stack and you don't specify a parameter,
+#     the command uses the stack's existing value", so GitHubOwnerId / GitHubRepoId / CreateOidcProvider
+#     etc. are reused exactly. The template adds no new parameters.
+aws cloudformation deploy --region eu-central-1 `
+  --template-file infra/github-oidc.yaml --stack-name readmate-github-oidc --capabilities CAPABILITY_NAMED_IAM `
+  --no-execute-changeset
+
+# 2b. Find the change set just created (do not rely on deploy's printed output)
+$cs = aws cloudformation list-change-sets --region eu-central-1 --stack-name readmate-github-oidc `
+  --query "reverse(sort_by(Summaries, &CreationTime))[0].ChangeSetId" --output text
+aws cloudformation describe-change-set --region eu-central-1 --change-set-name $cs --query "{Status:Status,ExecutionStatus:ExecutionStatus}"
+
+# 2c. Review the resource changes
+aws cloudformation describe-change-set --region eu-central-1 --change-set-name $cs `
+  --query "Changes[].ResourceChange.{Action:Action,Resource:LogicalResourceId,Type:ResourceType,Replacement:Replacement}" --output table
+
+# 2d. Check the parameters are the stack's current values (the two lists must be identical)
+aws cloudformation describe-stacks --region eu-central-1 --stack-name readmate-github-oidc `
+  --query "sort_by(Stacks[0].Parameters, &ParameterKey)[].[ParameterKey,ParameterValue]" --output text
+aws cloudformation describe-change-set --region eu-central-1 --change-set-name $cs `
+  --query "sort_by(Parameters, &ParameterKey)[].[ParameterKey,ParameterValue]" --output text
+
+# 2e. Only if 2c and 2d match the expectation below: execute and wait
+aws cloudformation execute-change-set --region eu-central-1 --change-set-name $cs
+aws cloudformation wait stack-update-complete --region eu-central-1 --stack-name readmate-github-oidc
+#     Otherwise discard it:
+# aws cloudformation delete-change-set --region eu-central-1 --change-set-name $cs
+
+# 3. Verify (never use --with-decryption)
+aws ssm get-parameter --region eu-central-1 --name /readmate/anthropic-api-key --query "Parameter.{Type:Type,Version:Version}"
+aws dynamodb describe-table --region eu-central-1 --table-name readmate-word-info --query "Table.{Status:TableStatus,Billing:BillingModeSummary.BillingMode}"
+aws dynamodb describe-time-to-live --region eu-central-1 --table-name readmate-word-info
+$role = aws cloudformation describe-stacks --stack-name readmate-github-oidc --query "Stacks[0].Outputs[?OutputKey=='OcrExecutionRoleArn'].OutputValue" --output text
+$acct = aws sts get-caller-identity --query Account --output text
+aws iam simulate-principal-policy --policy-source-arn $role --action-names ssm:GetParameter `
+  --resource-arns "arn:aws:ssm:eu-central-1:${acct}:parameter/readmate/anthropic-api-key" --query "EvaluationResults[].EvalDecision"   # allowed
+aws iam simulate-principal-policy --policy-source-arn $role --action-names dynamodb:GetItem dynamodb:PutItem dynamodb:UpdateItem dynamodb:DeleteItem dynamodb:Scan `
+  --resource-arns "arn:aws:dynamodb:eu-central-1:${acct}:table/readmate-word-info" --query "EvaluationResults[].[EvalActionName,EvalDecision]"  # 3 allowed, 2 denied
+
+# 4. After the backend is deployed: one real lookup (costs well under $0.001)
+$tok = Read-Host "Pilot token"
+$url = aws cloudformation describe-stacks --stack-name readmate --query "Stacks[0].Outputs[?OutputKey=='FunctionUrl'].OutputValue" --output text
+$body = '{"word":"stellte","wordIndex":1,"sentence":{"kind":"sentence","words":["Sie","stellte","ihn","ihrer","Mutter","vor."]},"target":"en"}'
+Invoke-RestMethod -Method Post -Uri "${url}v1/word-info" -ContentType application/json -Headers @{ "X-Pilot-Token" = $tok } -Body $body | ConvertTo-Json -Depth 5
+# run it twice: the second answer has meta.cached = true
+```
+
+**Expected change set (step 2c): exactly two rows.**
+
+| Action | Resource | Replacement |
+|---|---|---|
+| `Add` | `WordInfoTable` (`AWS::DynamoDB::Table`) | — (empty) |
+| `Modify` | `OcrExecutionRole` (`AWS::IAM::Role`) | `False` |
+
+**Do not execute if anything else appears.** That includes `GitHubOidcProvider` or `DeployRole` in any form, any `Remove`, or any `Replacement` of `True` or `Conditional`. It also includes any difference in step 2d. Delete the change set and investigate instead. (The new `WordInfoTableName` output is not a resource change and does not show in 2c.)
+
+**Rotation.** Run step 1 again with `--overwrite` added to `put-parameter`. The Lambda keeps the key in memory per container, so the next cold start picks the new value up; to force that, update any function configuration (for example a description or an environment variable) or just wait.
+
+**Privacy.** Tapped words with their sentence (or window) are sent to Anthropic for each lookup that misses the cache. No user identifier, image or token is sent. Data use follows Anthropic's commercial API terms (API inputs are not used for training by default). DynamoDB stores only hashes and generated answers. Logs hold request id, cached flag, latency, token usage, stop reason and error code, never the sentence, words, key or token.
+
+**Quality probe (optional, after deploys or prompt changes).** It posts 12 curated sentences (about $0.01), prints one line per case, a summary of model calls, `max_tokens` stops and output-token statistics, and a verdict line. It asks for the pilot token at a hidden prompt; the token is never an argument. Right after a deploy with a new `PROMPT_VERSION` every row is a cache miss.
+
+```powershell
+$url = aws cloudformation describe-stacks --stack-name readmate --query "Stacks[0].Outputs[?OutputKey=='FunctionUrl'].OutputValue" --output text
+python scripts/probe_word_info.py --api-url $url
+```
 
 ## 3. Manual fallback from Windows
 
