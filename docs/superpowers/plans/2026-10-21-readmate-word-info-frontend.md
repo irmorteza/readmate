@@ -17,6 +17,17 @@
 
 **Prerequisite:** Plan A Task 9 is committed, so that `contract/word-info.schema.json` and `contract/word-info.example.json` exist. Plan B can ship before Plan A is *deployed* (old backend → fallback).
 
+## Stop rules (mandatory)
+
+- **Before Task 1:** run `git rev-parse HEAD` and write the hash down as `BASE`, the commit before this plan's first task. The work happens on `main`, so every later comparison uses `BASE`, never `main`.
+- **Stop and report** if any file outside `frontend/src` would change. That includes the backend, `contract/`, CI, `vite.config.ts`, `package.json`, `package-lock.json`, `tsconfig.json`, `index.html` and docs. Every file this plan creates or modifies, test files included, is in `frontend/src`. `contract/word-info.*.json` is read, never written.
+- **Stop and report** if an existing test that the plan does not name fails, or would need its assertions changed. The plan names these test changes, and they are allowed:
+  - the stub tests in `translation.test.ts` (new `lookup(request)` call shape, same expectations);
+  - the old builder's tests in `lookup-request.test.ts` (removed in Task 4);
+  - the "passes the real text of the lines…" test in `result-view.test.ts` (becomes "sends the built request" in Task 4) and that file's fake-service helper.
+  Updating a test *helper* for a new required dependency or signature is allowed; changing any other `expect` is not.
+- **Local commits per task; never push.** Never `git push`, never open a PR.
+
 ## Global Constraints
 
 - **Additive with old backends:**
@@ -356,10 +367,10 @@ Everything that changes `TranslationService.lookup` lands in this one task, so t
 ### Task 8: Final verification
 
 - [ ] **Step 1:** From `frontend/`: `npx vitest run` and `npx tsc --noEmit` → pass. From `backend/`: `.venv/Scripts/python -m pytest -q` → pass (the contract files are shared).
-- [ ] **Step 2:** `git grep -n "innerHTML" frontend/src -- ':!*.test.ts'` → no new occurrence compared with `main` (`git diff main --stat` lists only intended files).
+- [ ] **Step 2:** `git diff BASE --stat` lists only files under `frontend/src` (the stop rule). `git diff BASE -- frontend/src ':!frontend/src/*.test.ts' | grep '^+.*innerHTML'` → no output (no new `innerHTML`).
 - [ ] **Step 3: Manual check with the fake engine** (needs Plan A implemented locally): `.\run.cmd -Engine fake`.
   - Open the app with token `dev`, take or choose a page, and tap `stellte` in a sentence that contains `vor` → the sheet shows "Separable verb · vorstellen" and both words carry the violet outline in Clean Text and Smart Image.
   - Tap another word → the outlines move or disappear.
   - Turn on developer mode → the Debug panel shows the request, the context length and `meta` (`cached` true on a repeat tap).
-- [ ] **Step 4: Old-backend check.** Run the frontend against a backend at the commit before Plan A (or stop the dev server's word-info route by running `git stash` on a scratch checkout). Taps show "Translation unavailable"; OCR works. If no old backend is handy, rely on the Task 3 test for the 400/404 shapes and say so in the report.
+- [ ] **Step 4: Old-backend behaviour.** No manual old-backend run. The Task 3 tests cover the old backend's shapes: a 400 `BAD_REQUEST` from the deployed Lambda before Plan A, and a 404 from the old dev server. Both map to `unavailable`, which shows "Translation unavailable". The report states that this check rests on those tests.
 - [ ] **Step 5:** `git status` clean except `docs/advisor-brief.md`; **no push**. Report to the owner: the frontend can merge before or after the backend deploy; after a deploy, installed PWAs may need the cache-clear step in `docs/deploy.md` §3.
