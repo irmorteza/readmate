@@ -42,6 +42,9 @@ export interface ResultViewState {
   sentenceTranslation?: string;
 }
 
+/** Live views' cleanups; a replaced (disconnected) view is released when the next one is created. */
+const liveViews = new Set<() => void>();
+
 export function createResultView(state: ResultViewState, deps: ResultViewDeps): HTMLElement {
   const { result, imageUrl, pageLabel, sentenceTranslation } = state;
   const newPhoto = button("New photo", deps.onNewPhoto, "secondary full");
@@ -77,12 +80,14 @@ export function createResultView(state: ResultViewState, deps: ResultViewDeps): 
     const { request, contextSource } = buildLookupRequest(event);
     const snapshot = (outcome: LookupOutcome) =>
       buildDebugSnapshot({ build: deps.build, result, event, request, contextSource, source, outcome });
+    // Read once per tap: turning developer mode on mid-lookup shows nothing until the next tap.
+    const dev = deps.devMode.get();
     const showDebug = (outcome: LookupOutcome) => {
-      if (deps.devMode.get()) panel.render(snapshot(outcome));
+      if (dev && deps.devMode.get()) panel.render(snapshot(outcome));
     };
 
     sheet.showLoading(event.word.text);
-    if (deps.devMode.get()) {
+    if (dev) {
       if (event.sentence) highlighter.set("sentence", event.sentence.wordIds);
       else highlighter.clear("sentence");
       showDebug({ status: "pending" });
@@ -225,13 +230,21 @@ export function createResultView(state: ResultViewState, deps: ResultViewDeps): 
   setTab("text");
 
   const screen = h("section", { class: "screen" }, readerBar, textPane, imagePane, sheet.backdrop, sheet.element);
-  // The screen is rebuilt on state changes; a disconnected one unsubscribes on the next toggle.
+  // The screen is rebuilt on state changes. Release views that are no longer in the document,
+  // so each replaced view (and the page photo it holds) can be collected.
+  for (const release of [...liveViews]) release();
   const off = deps.devMode.subscribe((on) => {
-    if (!screen.isConnected) return off();
+    if (!screen.isConnected) return release();
     if (!on) {
       highlighter.clear("sentence");
       panel.clear();
     }
   });
+  const release = () => {
+    if (screen.isConnected) return;
+    off();
+    liveViews.delete(release);
+  };
+  liveViews.add(release);
   return screen;
 }

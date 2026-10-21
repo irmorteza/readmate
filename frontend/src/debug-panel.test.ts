@@ -108,3 +108,26 @@ it("summary and copy button are at least 2.75rem high", () => {
   expect(declarations(".debug summary")).toContain("min-height: 2.75rem");
   expect(declarations(".debug-copy")).toContain("min-height: 2.75rem");
 });
+
+it("a new copy attempt cancels the previous Copied timer", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  try {
+    const writeText = vi.fn<(text: string) => Promise<void>>()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error("denied"));
+    const panel = createDebugPanel({ writeText });
+    document.body.replaceChildren(panel.element);
+    panel.render(snap(sentenceResult, 9));
+    const copy = document.querySelector<HTMLButtonElement>("button.debug-copy")!;
+    copy.click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(copy.textContent).toBe("Copied");
+    copy.click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(copy.textContent).toBe("Copy failed — select the text below");
+    await vi.advanceTimersByTimeAsync(2500);
+    expect(copy.textContent).toBe("Copy failed — select the text below");
+  } finally {
+    vi.useRealTimers();
+  }
+});

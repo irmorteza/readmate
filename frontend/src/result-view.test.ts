@@ -489,3 +489,35 @@ describe("sentences and developer mode", () => {
     setClipboard(undefined);
   });
 });
+
+describe("review fixes", () => {
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+  const panel = () => document.querySelector<HTMLDetailsElement>("details.debug")!;
+
+  it("turning developer mode on during a lookup shows nothing until the next tap", async () => {
+    let resolve!: (info: WordInfo) => void;
+    const dev = fakeDevMode(false);
+    mount(sentenceResult, service(() => new Promise((r) => (resolve = r))), {}, dev);
+    word(9).click();
+    dev.set(true);
+    resolve(info("war"));
+    await flush();
+    expect(panel().hidden).toBe(true);
+    expect(panel().querySelector(".debug-body")!.textContent).toBe("");
+  });
+
+  it("replaced result views unsubscribe: the subscriber count stays bounded", () => {
+    const dev = fakeDevMode(false);
+    let count = 0;
+    const counted = {
+      get: dev.get,
+      subscribe: (fn: (on: boolean) => void) => {
+        count++;
+        const off = dev.subscribe(fn);
+        return () => (count--, off());
+      },
+    };
+    for (let i = 0; i < 20; i++) mount(sentenceResult, service(), {}, counted as never);
+    expect(count).toBeLessThanOrEqual(3);
+  });
+});

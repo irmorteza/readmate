@@ -62,6 +62,7 @@ export function createDebugPanel(deps?: { writeText?: (text: string) => Promise<
         ? navigator.clipboard.writeText(value)
         : Promise.reject(new Error("no clipboard")));
 
+  let resetTimer: ReturnType<typeof setTimeout> | undefined;
   const body = h("div", { class: "debug-body" });
   const summary = h("summary", {}, "Debug", icon("chevron-right", { size: 16, class: "debug-chevron" }));
   const element = h("details", { class: "debug", hidden: true }, summary, body);
@@ -71,12 +72,13 @@ export function createDebugPanel(deps?: { writeText?: (text: string) => Promise<
     const fallback = h("textarea", { class: "debug-fallback", readOnly: true, rows: 8, hidden: true, value: json });
     const copy = h("button", { type: "button", class: "secondary full debug-copy", textContent: COPY_LABEL });
     copy.onclick = () => {
+      clearTimeout(resetTimer);
       Promise.resolve()
         .then(() => write(json))
         .then(
           () => {
             copy.textContent = "Copied";
-            setTimeout(() => (copy.textContent = COPY_LABEL), 2000);
+            resetTimer = setTimeout(() => (copy.textContent = COPY_LABEL), 2000);
           },
           () => {
             copy.textContent = "Copy failed — select the text below";
