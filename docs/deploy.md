@@ -46,7 +46,7 @@ aws cloudformation deploy `
 
 - `GitHubOwner` and `GitHubRepo` must be spelled exactly as on GitHub (the trust condition is case-sensitive).
 - `GitHubOwnerId` and `GitHubRepoId` are the numeric GitHub ids, see "Finding the two numeric ids" below. GitHub puts them into the OIDC subject (`repo:<owner>@<owner-id>/<repo>@<repo-id>:environment:production`), and the role trusts exactly that string, so a renamed or re-registered account or repository name can never match.
-- When you redeploy this stack later, pass `CreateOidcProvider=true` again: the stack owns the provider, and `false` would delete it.
+- The stack owns the provider, and passing `CreateOidcProvider=false` on an update would delete it. Later updates omit `--parameter-overrides`, so the current value (`true`) is kept and there is no need to pass it again.
 - `<bucket>` is the `aws-sam-cli-managed-default-samclisourcebucket-…` name from the SAM stack outputs (`aws cloudformation describe-stacks --stack-name aws-sam-cli-managed-default --query "Stacks[0].Outputs"`).
 - Use `CreateOidcProvider=false` if the account already has the GitHub provider; it must list `sts.amazonaws.com` as a client id.
 - Note the outputs: `DeployRoleArn`, `OcrExecutionRoleArn` and `WordInfoTableName`.
@@ -72,7 +72,7 @@ GitHub's OIDC token carries the subject in the immutable form `repo:<owner>@<own
 
 - **CloudTrail** (reads the exact string GitHub sent): CloudTrail → Event history → filter *Event name* = `AssumeRoleWithWebIdentity` → open the failed event and look at the subject (`userIdentity.userName`, or the `sub` in the error message). It reads `repo:<owner>@<owner-id>/<repo>@<repo-id>:environment:production`; the two numbers are the ids.
 
-Then update the stack from the laptop with the same command as above (all parameters, `CreateOidcProvider=true`). The change modifies only the role's trust policy.
+Then update the stack from the laptop with the change-set procedure in section 2.5 (review the change set before executing it). Because the ids themselves must change, pass only `--parameter-overrides GitHubOwnerId=<owner-id> GitHubRepoId=<repo-id>`; every other parameter keeps its current value. The change should modify only the role's trust policy.
 
 ### 2.3 Switch the app stack to the external execution role (once)
 
