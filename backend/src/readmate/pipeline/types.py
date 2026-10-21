@@ -1,6 +1,6 @@
 """Data shapes shared by the pipeline. Keys use the JSON wire names (camelCase)."""
 
-from typing import Literal, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 
 class Box(TypedDict):
@@ -50,9 +50,17 @@ class OcrWord(TypedDict):
     lineIds: list[int]
 
 
+class OcrSentence(TypedDict):
+    id: int
+    kind: Literal["sentence", "fragment", "incomplete"]
+    wordIds: list[int]
+    text: str
+
+
 class OcrResult(TypedDict):
     version: Literal[1]
     engine: str
     lines: list[OcrLine]
     boxes: list[OcrBox]
     words: list[OcrWord]
+    sentences: NotRequired[list[OcrSentence]]
