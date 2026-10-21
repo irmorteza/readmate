@@ -226,16 +226,19 @@ def test_counter_unavailable_is_503():
     assert engine.calls == []
 
 
-def test_secret_unavailable_is_503_and_counter_untouched():
+def test_secret_unavailable_is_503_and_counter_untouched(caplog):
     store = SpyStore()
 
     def factory():
         raise SecretUnavailable
 
     svc = WordInfoService(factory, store, MODEL, 100, LruCache())
-    err = fail(svc)
+    with caplog.at_level(logging.INFO, logger="readmate"):
+        err = fail(svc)
     assert (err.status, err.code) == (503, "NOT_CONFIGURED")
     assert store.incs == 0
+    rec = [r for r in caplog.records if "secret unavailable" in r.getMessage()]
+    assert rec and not rec[0].exc_info
 
 
 def test_import_error_is_503_logged_and_not_cached(caplog):
@@ -343,3 +346,17 @@ def test_service_from_env_uses_dynamo_when_table_set(monkeypatch):
     monkeypatch.setattr(boto3, "client", lambda *a, **k: object())
     svc = service_from_env({"WORD_INFO_ENGINE": "fake", "WORD_INFO_TABLE": "t"})
     assert isinstance(svc.store, DynamoStore)
+
+
+def test_nested_mutation_does_not_leak_into_cache():
+    sep = json.loads(GOOD_TEXT)
+    sep["separableVerb"] = {"infinitive": "anstehen", "wordIndexes": [1, 2]}
+    reply = EngineReply(json.dumps(sep), "end_turn", 5, 10)
+    svc, _, store = make([reply])
+    first = svc.lookup(REQ, ms())
+    first["separableVerb"]["wordIndexes"].append(9)
+    second = svc.lookup(REQ, ms())
+    assert second["separableVerb"]["wordIndexes"] == [1, 2]
+    second["separableVerb"]["wordIndexes"].append(9)
+    assert svc.lookup(REQ, ms())["separableVerb"]["wordIndexes"] == [1, 2]
+    assert store.get(KEY)["separableVerb"]["wordIndexes"] == [1, 2]

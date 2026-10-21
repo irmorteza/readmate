@@ -4,6 +4,7 @@ Provider-neutral: engines are reached only through the registry and the
 WordInfoEngine protocol. Words, sentences and responses are never logged.
 """
 
+import copy
 import logging
 import time
 from collections.abc import Callable, Mapping
@@ -86,6 +87,7 @@ class WordInfoService:
                 logger.exception("word-info engine import failed")
                 raise _not_configured() from None
             except SecretUnavailable:
+                logger.warning("word-info engine secret unavailable")
                 raise _not_configured() from None
         return self._engine
 
@@ -107,7 +109,7 @@ class WordInfoService:
             if hit is not None:
                 meta = self._meta(start, 0, [], [])
                 st["ms"] = meta["latencyMs"]
-                return {**hit, "meta": meta}
+                return {**copy.deepcopy(hit), "meta": meta}
 
             engine = self._get_engine()
             body = self._run(engine, req, remaining_ms, stops, tokens, st)
@@ -115,10 +117,10 @@ class WordInfoService:
                 self.store.put(key, body, self.model, PROMPT_VERSION)
             except StoreUnavailable:
                 logger.warning("word-info store unavailable on put; answer not cached")
-            self._lru.put(key, body)
+            self._lru.put(key, copy.deepcopy(body))
             meta = self._meta(start, st["attempts"], stops, tokens)
             st["ms"] = meta["latencyMs"]
-            return {**body, "meta": meta}
+            return {**copy.deepcopy(body), "meta": meta}
         finally:
             logger.info(
                 "word_info cached=%s attempts=%d stops=%s out_tokens=%s ms=%d",
