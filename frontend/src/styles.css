@@ -321,6 +321,10 @@ input[type="password"] {
   font-weight: 700;
   box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.8);
 }
+.word.hl-sentence {
+  text-decoration: underline dotted var(--indigo-600) 0.125rem;
+  text-underline-offset: 0.25rem;
+}
 .word.selected::after {
   content: "";
   display: inline-block;
@@ -395,6 +399,11 @@ input[type="password"] {
 }
 .box.selected {
   background-color: var(--highlight);
+}
+/* Highlight rules must never use pseudo-elements: .word::before is the word's hit area. */
+.box.hl-sentence {
+  border-color: var(--indigo-600);
+  border-style: dashed;
 }
 
 /* Word sheet (UI v2): anchored inside the app container, never fixed to the window */

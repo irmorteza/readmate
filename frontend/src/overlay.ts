@@ -6,6 +6,7 @@ export type ZoomLevel = 1 | 2 | 3;
 export interface Overlay {
   setZoom(level: ZoomLevel): void;
   setOutlines(on: boolean): void;
+  elementsForWord(wordId: number): HTMLElement[];
 }
 
 export function boxToCss(box: Box): { left: string; top: string; width: string; height: string } {
@@ -61,5 +62,7 @@ export function renderOverlay(
     setOutlines(on) {
       stage.classList.toggle("outlines", on);
     },
+    elementsForWord: (wordId) =>
+      words.get(wordId)?.boxIds.flatMap((id) => elements.get(id) ?? []) ?? [],
   };
 }

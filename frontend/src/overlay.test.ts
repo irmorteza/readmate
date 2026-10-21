@@ -81,4 +81,10 @@ describe("renderOverlay", () => {
     overlay.setOutlines(true);
     expect(stage.classList.contains("outlines")).toBe(true);
   });
+
+  it("elementsForWord returns the box elements of a word, by id", () => {
+    const { overlay } = mount();
+    expect(overlay.elementsForWord(2).map((e) => e.dataset.boxId)).toEqual(["3", "12"]);
+    expect(overlay.elementsForWord(1)).toEqual([]);
+  });
 });
