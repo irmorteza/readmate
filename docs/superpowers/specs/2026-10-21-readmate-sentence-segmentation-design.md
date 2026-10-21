@@ -186,7 +186,7 @@ The lowercase cancel rule does not change this result. Missing word ids are 43, 
 - `backend/src/readmate/pipeline/types.py`: add `OcrSentence`; `OcrResult.sentences` is `NotRequired[list[OcrSentence]]`.
 - `contract/example.json`: regenerated with `UPDATE_GOLDEN=1`; it gains one `sentence` entry for `Das Vorstellungskraft war groß.`.
 - **`sentences` is optional in the schema, but the new backend always emits it** (an empty list for a page with no words). A missing field therefore means an older backend.
-- The frontend guard and types are not changed; the guard ignores unknown keys. `contract.test.ts` derives required keys from the schema and has one added test for a result without sentences; `contract.ts` and the guard are unchanged.
+- The frontend guard and types are not changed; the guard ignores unknown keys. `contract.test.ts` derives required keys from the schema and has one added test for a result without sentences; `contract.ts` and the guard are unchanged. (updated — see 2026-10-21-readmate-dev-debug-panel-design.md)
 
 ### 8.3 Robustness
 
