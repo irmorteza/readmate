@@ -39,15 +39,19 @@ class DevRequestHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         length = int(self.headers.get("Content-Length") or 0)
         raw = self.rfile.read(length)
-        if self.path != "/ocr":
+        if self.path not in ("/ocr", "/v1/word-info"):
             self._send(
                 404, json.dumps({"error": {"code": "NOT_FOUND", "message": "Not found"}}).encode()
             )
             return
+        is_text = self.path == "/v1/word-info"
+        body = raw.decode("utf-8", errors="replace") if is_text else base64.b64encode(raw).decode()
         event = {
+            "rawPath": self.path,
+            "requestContext": {"http": {"method": "POST"}},
             "headers": {k.lower(): v for k, v in self.headers.items()},
-            "body": base64.b64encode(raw).decode(),
-            "isBase64Encoded": True,
+            "body": body,
+            "isBase64Encoded": not is_text,
         }
         response = handler(event, None)
         self._send(response["statusCode"], response["body"].encode("utf-8"))
@@ -62,6 +66,7 @@ def make_server(port: int = 3000) -> HTTPServer:
 
 if __name__ == "__main__":
     os.environ.setdefault("OCR_ENGINE", "fake")
+    os.environ.setdefault("WORD_INFO_ENGINE", "fake")
     os.environ.setdefault("PILOT_TOKEN", "dev")
     os.environ.setdefault("AWS_DEFAULT_REGION", "eu-central-1")
     port = int(os.environ.get("DEV_PORT", "3000"))

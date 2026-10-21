@@ -3,8 +3,8 @@
   Runs ReadMate locally: backend dev server + Vite dev server. Ctrl+C stops both.
 
 .EXAMPLE
-  .\run.ps1                      # real Textract (uses your AWS credentials), token "dev"
-  .\run.ps1 -Engine fake         # recorded fixture, no AWS calls
+  .\run.ps1                      # real Textract + Anthropic word lookups (uses your AWS credentials), token "dev"
+  .\run.ps1 -Engine fake         # recorded OCR fixture and fake word info, no AWS or Anthropic calls
   .\run.ps1 -Token my-secret     # token the app must send (type the same into the app)
 #>
 param(
@@ -35,12 +35,20 @@ foreach ($port in $ApiPort, $WebPort) {
 $env:OCR_ENGINE = $Engine
 $env:PILOT_TOKEN = $Token
 $env:DEV_PORT = "$ApiPort"
+if ($Engine -eq "fake") {
+  $env:WORD_INFO_ENGINE = "fake"
+} else {
+  $env:WORD_INFO_ENGINE = "anthropic"
+  $env:ANTHROPIC_API_KEY_PARAM = "/readmate/anthropic-api-key"
+}
+Remove-Item Env:WORD_INFO_TABLE -ErrorAction SilentlyContinue
 $env:VITE_API_URL = "http://localhost:$ApiPort"   # overrides frontend/.env.development
 
 Write-Host "Backend : http://localhost:$ApiPort  (OCR_ENGINE=$Engine)"
 Write-Host "App     : http://localhost:$WebPort"
 Write-Host "Token   : $Token   <- paste this into the app"
 if ($Engine -eq "textract") { Write-Host "Every photo is sent to Amazon Textract with your AWS credentials." }
+if ($Engine -ne "fake") { Write-Host "Word lookups are sent to the Anthropic API (key from SSM /readmate/anthropic-api-key)." }
 
 $api = Start-Process -FilePath $python -ArgumentList "dev_server.py" `
   -WorkingDirectory (Join-Path $root "backend") -NoNewWindow -PassThru
