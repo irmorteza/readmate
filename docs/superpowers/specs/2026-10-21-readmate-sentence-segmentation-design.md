@@ -180,14 +180,14 @@ The lowercase cancel rule does not change this result. Missing word ids are 43, 
 - `backend/src/readmate/pipeline/types.py`: add `OcrSentence`; `OcrResult.sentences` is `NotRequired[list[OcrSentence]]`.
 - `contract/example.json`: regenerated with `UPDATE_GOLDEN=1`; it gains one `sentence` entry for `Das Vorstellungskraft war groß.`.
 - **`sentences` is optional in the schema, but the new backend always emits it** (an empty list for a page with no words). A missing field therefore means an older backend.
-- The frontend guard and types are not changed; the guard ignores unknown keys, so `contract.test.ts` passes on the new golden example.
+- The frontend guard and types are not changed; the guard ignores unknown keys. `contract.test.ts` derives required keys from the schema and has one added test for a result without sentences; `contract.ts` and the guard are unchanged.
 
 ### 8.3 Robustness
 
 Text that is not sentences must never break OCR.
 
 - **Small inputs are defined and tested:** no words (`[]`), a single word, a single line, several one-word lines, numbers only, a column with one line. Medians and percentiles over one value are that value; an empty local window uses the line's own left edge (§5.1); nothing divides by zero (§5.1).
-- **Safety net:** `process_image` calls `segment_sentences` inside `try/except Exception`. On an exception it logs it with `logger.exception` (logger `readmate`) and sets `sentences` to the fallback: one `fragment` entry per line that has words, in line order, where each word belongs to the line of its first box and `text` is built as in §8.1. The OCR response therefore always succeeds and always contains `sentences`. A test forces an exception (monkeypatched `segment_sentences`) and checks the fallback and the log record.
+- **Safety net:** `process_image` calls `segment_sentences` inside `try/except Exception`. On an exception it logs it with `logger.exception` (logger `readmate`) and sets `sentences` to the fallback: one `fragment` entry per line that has words, in line order, where each word belongs to the line of its first box and `text` is built as in §8.1. The OCR response therefore always succeeds and always contains `sentences`. A test forces an exception (monkeypatched `segment_sentences`) and checks the fallback and the log record. If `fallback_sentences` also raises, the error is logged and `sentences` is `[]`.
 
 ## 9. Known limitations
 
