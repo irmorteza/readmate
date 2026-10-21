@@ -1,13 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import { createDrawer } from "./drawer";
+import { declarations } from "./test-css";
 
-function make() {
+function make(devMode = false) {
   const deps = {
     version: "abc1234",
     diagnostics: "Page 390×844 · screen 390×844 @2x · touch · UI ×1",
     onScanner: vi.fn(),
     onResetToken: vi.fn(),
     comingSoon: vi.fn(),
+    devMode,
+    onDevModeChange: vi.fn(),
   };
   const drawer = createDrawer(deps);
   document.body.replaceChildren(drawer.element);
@@ -138,5 +141,25 @@ describe("drawer dialog behavior", () => {
     trigger.remove();
     expect(() => drawer.close()).not.toThrow();
   });
-});
 
+  const devSwitch = (root: HTMLElement) => root.querySelector<HTMLInputElement>('input[role="switch"]')!;
+
+  it("shows a Developer mode switch reflecting the stored state", () => {
+    expect(devSwitch(make(false).drawer.element).checked).toBe(false);
+    const { drawer } = make(true);
+    expect(devSwitch(drawer.element).checked).toBe(true);
+    expect(devSwitch(drawer.element).closest("label")!.textContent).toContain("Developer mode");
+  });
+
+  it("toggling the switch reports the new state and keeps the drawer open", () => {
+    const { drawer, deps } = make(false);
+    drawer.open();
+    devSwitch(drawer.element).click();
+    expect(deps.onDevModeChange).toHaveBeenCalledWith(true);
+    expect(drawer.element.hidden).toBe(false);
+  });
+
+  it("the switch row is at least 2.75rem high", () => {
+    expect(declarations(".dev-switch")).toContain("min-height: 2.75rem");
+  });
+});

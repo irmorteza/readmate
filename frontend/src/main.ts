@@ -4,6 +4,7 @@ import { createController, errorMessage, type State } from "./app";
 import { renderBottomNav } from "./bottom-nav";
 import { BUILD_SHA } from "./build-info";
 import { button, h } from "./dom";
+import { getDevMode, setDevMode } from "./dev-mode";
 import { createDrawer } from "./drawer";
 import { createEmptyView } from "./empty-view";
 import { renderHeader } from "./header";
@@ -126,6 +127,8 @@ function render(state: State): void {
     onScanner: () => controller.newPhoto(),
     onResetToken: () => controller.resetToken(),
     comingSoon,
+    devMode: getDevMode(),
+    onDevModeChange: setDevMode,
   });
   const header = renderHeader({ onMenu: drawer.open, onHome: () => controller.newPhoto() });
   const nav =

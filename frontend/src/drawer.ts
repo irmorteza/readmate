@@ -8,6 +8,8 @@ export interface DrawerDeps {
   onScanner: () => void;
   onResetToken: () => void;
   comingSoon: (label: string) => void;
+  devMode: boolean;
+  onDevModeChange: (on: boolean) => void;
 }
 
 export interface Drawer {
@@ -55,6 +57,13 @@ export function createDrawer(deps: DrawerDeps): Drawer {
   });
   closeButton.append(icon("x", { size: 20 }));
 
+  const devInput = h("input", {
+    type: "checkbox",
+    checked: deps.devMode,
+    attrs: { role: "switch" },
+    onchange: () => deps.onDevModeChange(devInput.checked),
+  });
+
   const panel = h(
     "div",
     { class: "drawer-panel" },
@@ -92,6 +101,7 @@ export function createDrawer(deps: DrawerDeps): Drawer {
         },
         "secondary full",
       ),
+      h("label", { class: "dev-switch" }, h("span", { textContent: "Developer mode" }), devInput),
       h("p", { class: "version", textContent: `Version ${deps.version}` }),
       h("p", { class: "version diagnostics", textContent: deps.diagnostics }),
     ),
