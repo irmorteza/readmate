@@ -1,3 +1,5 @@
+import json
+import logging
 from pathlib import Path
 
 import jsonschema
@@ -54,6 +56,7 @@ def test_blank_page_returns_empty_valid_result():
     )
     out = process_image(b"", StubEngine({"lines": []}))
     assert out["lines"] == out["boxes"] == out["words"] == []
+    assert out["sentences"] == []
     jsonschema.validate(out, schema)
 
 
@@ -128,3 +131,48 @@ def test_noise_glyph_left_of_continuation_does_not_block_merge():
     )
     texts = [w["text"] for w in process_image(b"", StubEngine(page))["words"]]
     assert "Vorstellungskraft" in texts
+
+
+SCHEMA = json.loads(
+    (Path(__file__).resolve().parents[2] / "contract" / "ocr-result.schema.json").read_text(
+        encoding="utf-8"
+    )
+)
+
+
+def _boom(result):
+    raise RuntimeError("boom")
+
+
+def test_result_always_has_sentences():
+    out = process_image(b"jpeg", FakeEngine(FIXTURES / "golden.textract.json"))
+    assert out["sentences"] == [
+        {
+            "id": 0,
+            "kind": "sentence",
+            "wordIds": [1, 2, 4, 5],
+            "text": "Das Vorstellungskraft war groß.",
+        }
+    ]
+
+
+def test_segmentation_failure_falls_back(monkeypatch, caplog):
+    monkeypatch.setattr("readmate.core.process_image.segment_sentences", _boom)
+    with caplog.at_level(logging.ERROR, logger="readmate"):
+        out = process_image(b"jpeg", FakeEngine(FIXTURES / "golden.textract.json"))
+    assert [s["wordIds"] for s in out["sentences"]] == [[1, 2], [4], [5]]
+    assert {s["kind"] for s in out["sentences"]} == {"fragment"}
+    records = [r for r in caplog.records if r.name == "readmate" and r.levelno == logging.ERROR]
+    assert records and records[0].exc_info
+    jsonschema.validate(out, SCHEMA)
+
+
+def test_fallback_failure_gives_empty_sentences(monkeypatch, caplog):
+    monkeypatch.setattr("readmate.core.process_image.segment_sentences", _boom)
+    monkeypatch.setattr("readmate.core.process_image.fallback_sentences", _boom)
+    with caplog.at_level(logging.ERROR, logger="readmate"):
+        out = process_image(b"jpeg", FakeEngine(FIXTURES / "golden.textract.json"))
+    assert out["sentences"] == []
+    assert out["words"]
+    assert len([r for r in caplog.records if r.levelno == logging.ERROR]) == 2
+    jsonschema.validate(out, SCHEMA)

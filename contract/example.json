@@ -154,5 +154,18 @@
         2
       ]
     }
+  ],
+  "sentences": [
+    {
+      "id": 0,
+      "kind": "sentence",
+      "wordIds": [
+        1,
+        2,
+        4,
+        5
+      ],
+      "text": "Das Vorstellungskraft war groß."
+    }
   ]
 }

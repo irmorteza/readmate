@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import example from "../../contract/example.json";
+import schema from "../../contract/ocr-result.schema.json";
 import { isOcrResult } from "./contract";
 
 const clone = () => structuredClone(example) as Record<string, any>;
@@ -10,11 +11,17 @@ describe("isOcrResult", () => {
   });
 
   it("rejects a copy missing any top-level field", () => {
-    for (const key of Object.keys(example)) {
+    for (const key of schema.required) {
       const copy = clone();
       delete copy[key];
       expect(isOcrResult(copy), `missing ${key}`).toBe(false);
     }
+  });
+
+  it("accepts a result without sentences (older backend)", () => {
+    const copy = clone();
+    delete copy.sentences;
+    expect(isOcrResult(copy)).toBe(true);
   });
 
   it("rejects a nested box missing a field", () => {

@@ -54,6 +54,25 @@
           "lineIds": { "type": "array", "items": { "type": "integer", "minimum": 0 } }
         }
       }
+    },
+    "sentences": {
+      "type": "array",
+      "description": "Words grouped in reading order; every word is in exactly one entry. Absent when produced by an older backend.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "wordIds", "text"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 0 },
+          "kind": { "enum": ["sentence", "fragment", "incomplete"] },
+          "wordIds": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "integer", "minimum": 0 }
+          },
+          "text": { "type": "string" }
+        }
+      }
     }
   },
   "$defs": {
