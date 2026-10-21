@@ -21,6 +21,11 @@ export const gappedResult: OcrResult = {
   ],
 };
 
+export const sentenceResult: OcrResult = {
+  ...gappedResult,
+  sentences: [{ id: 0, kind: "sentence", wordIds: [2, 9], text: "Vorstellungskraft war" }],
+};
+
 export const emptyResult: OcrResult = {
   version: 1,
   engine: "fake",

@@ -1,4 +1,6 @@
 // Mirrors contract/ocr-result.schema.json (the single source of truth).
+// One deliberate difference: a malformed optional `sentences` field is dropped by
+// parseOcrResult instead of rejecting the whole result, so it can never break word display.
 
 export interface Box {
   x: number;
@@ -30,12 +32,22 @@ export interface OcrWord {
   lineIds: number[];
 }
 
+export type SentenceKind = "sentence" | "fragment" | "incomplete";
+
+export interface OcrSentence {
+  id: number;
+  kind: SentenceKind;
+  wordIds: number[];
+  text: string;
+}
+
 export interface OcrResult {
   version: 1;
   engine: string;
   lines: OcrLine[];
   boxes: OcrBox[];
   words: OcrWord[];
+  sentences?: OcrSentence[];
 }
 
 const isRecord = (x: unknown): x is Record<string, unknown> =>
@@ -77,16 +89,58 @@ function isWord(x: unknown): x is OcrWord {
   );
 }
 
-export function isOcrResult(x: unknown): x is OcrResult {
+const SENTENCE_KINDS: readonly unknown[] = ["sentence", "fragment", "incomplete"];
+
+function isSentence(x: unknown, wordIds: Set<number>): x is OcrSentence {
   return (
     isRecord(x) &&
-    x.version === 1 &&
-    typeof x.engine === "string" &&
-    Array.isArray(x.lines) &&
-    x.lines.every(isLine) &&
-    Array.isArray(x.boxes) &&
-    x.boxes.every(isBoxEntry) &&
-    Array.isArray(x.words) &&
-    x.words.every(isWord)
+    isId(x.id) &&
+    SENTENCE_KINDS.includes(x.kind) &&
+    isIdList(x.wordIds) &&
+    x.wordIds.length > 0 &&
+    x.wordIds.every((id) => wordIds.has(id)) &&
+    typeof x.text === "string"
   );
+}
+
+export function isOcrResult(x: unknown): x is OcrResult {
+  if (
+    !(
+      isRecord(x) &&
+      x.version === 1 &&
+      typeof x.engine === "string" &&
+      Array.isArray(x.lines) &&
+      x.lines.every(isLine) &&
+      Array.isArray(x.boxes) &&
+      x.boxes.every(isBoxEntry) &&
+      Array.isArray(x.words) &&
+      x.words.every(isWord)
+    )
+  ) {
+    return false;
+  }
+  if (!("sentences" in x)) return true;
+  const ids = new Set((x.words as OcrWord[]).map((w) => w.id));
+  return Array.isArray(x.sentences) && x.sentences.every((s) => isSentence(s, ids));
+}
+
+const ignored = new WeakSet<OcrResult>();
+
+/** Like isOcrResult, but drops a malformed `sentences` field instead of rejecting the result. */
+export function parseOcrResult(x: unknown): OcrResult | null {
+  if (isOcrResult(x)) return x;
+  if (isRecord(x) && "sentences" in x) {
+    const { sentences: _, ...rest } = x;
+    if (isOcrResult(rest)) {
+      console.warn("readmate: ignoring malformed sentences");
+      ignored.add(rest);
+      return rest;
+    }
+  }
+  return null;
+}
+
+/** True when parseOcrResult dropped a malformed `sentences` field from this result. */
+export function sentencesIgnored(result: OcrResult): boolean {
+  return ignored.has(result);
 }

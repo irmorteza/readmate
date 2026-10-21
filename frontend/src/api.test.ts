@@ -30,6 +30,16 @@ describe("postOcr", () => {
     expect(await postOcr(blob, "tok")).toEqual(example);
   });
 
+  it("accepts a response whose sentences are malformed, keeping the words", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const body = structuredClone(example) as Record<string, any>;
+    body.sentences[0].kind = "bogus";
+    vi.stubGlobal("fetch", respond(200, body));
+    const result = await postOcr(blob, "tok");
+    expect(result.words).toEqual(example.words);
+    expect(result.sentences).toBeUndefined();
+  });
+
   it("sends token and content type to <base>/ocr", async () => {
     const fetchMock = respond(200, example);
     vi.stubGlobal("fetch", fetchMock);

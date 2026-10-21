@@ -1,4 +1,4 @@
-import { isOcrResult, type OcrResult } from "./contract";
+import { parseOcrResult, type OcrResult } from "./contract";
 import { AppError } from "./errors";
 
 const TIMEOUT_MS = 20_000;
@@ -40,6 +40,7 @@ export async function postOcr(blob: Blob, token: string, signal?: AbortSignal): 
   } catch {
     throw new AppError("generic");
   }
-  if (!isOcrResult(data)) throw new AppError("generic");
-  return data;
+  const result = parseOcrResult(data);
+  if (!result) throw new AppError("generic");
+  return result;
 }

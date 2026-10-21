@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import example from "../../contract/example.json";
 import schema from "../../contract/ocr-result.schema.json";
-import { isOcrResult } from "./contract";
+import { isOcrResult, parseOcrResult, sentencesIgnored } from "./contract";
 
 const clone = () => structuredClone(example) as Record<string, any>;
 
@@ -55,5 +55,63 @@ describe("isOcrResult", () => {
     for (const bad of [null, undefined, 42, "x", []]) {
       expect(isOcrResult(bad)).toBe(false);
     }
+  });
+});
+
+const malformed: Array<[string, (c: Record<string, any>) => void]> = [
+  ["unknown kind", (c) => (c.sentences[0].kind = "paragraph")],
+  ["unknown word id", (c) => c.sentences[0].wordIds.push(999)],
+  ["empty wordIds", (c) => (c.sentences[0].wordIds = [])],
+  ["null", (c) => (c.sentences = null)],
+  ["not an array", (c) => (c.sentences = { 0: {} })],
+  ["entry missing text", (c) => delete c.sentences[0].text],
+  ["negative id", (c) => (c.sentences[0].id = -1)],
+];
+
+describe("sentences", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it("accepts the example with sentences", () => {
+    expect(example.sentences).toHaveLength(1);
+    expect(isOcrResult(example)).toBe(true);
+  });
+
+  it.each(malformed)("isOcrResult rejects sentences with %s", (_, breakIt) => {
+    const copy = clone();
+    breakIt(copy);
+    expect(isOcrResult(copy)).toBe(false);
+  });
+
+  it.each(malformed)("parseOcrResult drops sentences with %s and keeps the words", (_, breakIt) => {
+    const copy = clone();
+    breakIt(copy);
+    const parsed = parseOcrResult(copy)!;
+    expect(parsed).not.toBeNull();
+    expect(parsed.words).toEqual(example.words);
+    expect("sentences" in parsed).toBe(false);
+    expect(sentencesIgnored(parsed)).toBe(true);
+    expect(console.warn).toHaveBeenCalledWith("readmate: ignoring malformed sentences");
+  });
+
+  it("parseOcrResult returns a valid result unchanged and not ignored", () => {
+    const copy = clone();
+    expect(parseOcrResult(copy)).toBe(copy);
+    expect(sentencesIgnored(copy as never)).toBe(false);
+  });
+
+  it("parseOcrResult accepts a result without sentences, not marked ignored", () => {
+    const copy = clone();
+    delete copy.sentences;
+    expect(sentencesIgnored(parseOcrResult(copy)!)).toBe(false);
+  });
+
+  it("parseOcrResult returns null when the core is broken, even with bad sentences", () => {
+    const copy = clone();
+    delete copy.words;
+    copy.sentences = null;
+    expect(parseOcrResult(copy)).toBeNull();
   });
 });
