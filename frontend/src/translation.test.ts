@@ -15,6 +15,8 @@ const entries = [
 ] as const;
 
 describe("stub translation service", () => {
+  it("names its source 'stub'", () => expect(stubTranslationService.source).toBe("stub"));
+
   it.each(entries)("knows %s", async (word, phonetic, pos, translation, exampleDe, exampleEn) => {
     expect(await stubTranslationService.lookup(word, "any context")).toEqual({
       word,

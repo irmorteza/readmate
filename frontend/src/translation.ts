@@ -13,6 +13,8 @@ export interface WordInfo {
  * POST /explain with { word, context }); the UI only knows this interface.
  */
 export interface TranslationService {
+  /** Short name of the implementation, shown in the developer debug panel. */
+  readonly source?: string;
   lookup(word: string, context: string): Promise<WordInfo>;
 }
 
@@ -73,6 +75,7 @@ export function fallbackInfo(word: string): WordInfo {
 
 /** Placeholder service: the dummy dictionary, a generic fallback otherwise. */
 export const stubTranslationService: TranslationService = {
+  source: "stub",
   async lookup(word) {
     const entry = Object.hasOwn(DUMMY_DICTIONARY, word) ? DUMMY_DICTIONARY[word] : undefined;
     return entry ? { ...entry, word } : fallbackInfo(word);
