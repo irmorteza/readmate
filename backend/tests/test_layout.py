@@ -44,6 +44,23 @@ def test_short_line_alone_is_not_boundary():
     assert 1 in layout.short
 
 
+def test_widely_spaced_page_has_one_boundary():
+    ys = [0.10, 0.166, 0.232, 0.298, 0.364, 0.484, 0.550]  # 1.2u line gaps, one 4u gap
+    layout = analyze_layout(prepared(page_of(*[text_line(FULL, y) for y in ys])))
+    assert layout.boundary_after == {4}
+
+
+def test_one_row_split_into_two_blocks_is_not_a_boundary():
+    page = page_of(
+        text_line(FULL, 0.10),
+        text_line(FULL, 0.14),
+        text_line("der Abend kam", 0.18, x=0.1, right=0.4),
+        text_line("sehr spät und dann", 0.18, x=0.5, right=0.9),
+        text_line(FULL, 0.22),
+    )
+    assert analyze_layout(prepared(page)).boundary_after == set()
+
+
 def test_hyphen_line_is_never_boundary():
     r = prepared(
         page_of(

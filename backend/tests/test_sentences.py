@@ -1,5 +1,7 @@
+import json
 from pathlib import Path
 
+import jsonschema
 import pytest
 
 from helpers import bx, raw_page, text_line
@@ -10,6 +12,11 @@ from readmate.pipeline.normalize import normalize
 from readmate.pipeline.sentences import fallback_sentences, segment_sentences
 
 FIXTURES = Path(__file__).parent / "fixtures"
+SCHEMA = json.loads(
+    (Path(__file__).resolve().parents[2] / "contract" / "ocr-result.schema.json").read_text(
+        encoding="utf-8"
+    )
+)
 FULL = "Es war ein langer Tag und"
 
 
@@ -50,6 +57,7 @@ def test_book_fixture_entries():
     check_invariants(r, entries)
     assert [e["id"] for e in entries] == list(range(15))
     assert entries[11]["text"] == "»Sind Sie die Mutter von"
+    jsonschema.validate({**r, "engine": "fake", "sentences": entries}, SCHEMA)
 
 
 def test_kommst_du_fragte_er_is_one_entry():
@@ -60,8 +68,8 @@ def test_unlisted_abbreviation_before_lowercase():
     assert len(run(text_line("Siehe Abs. drei hier. Ende.", 0.1))) == 2
 
 
-def test_usw_before_lowercase():
-    assert len(run(text_line("Äpfel usw. und Birnen. Ende.", 0.1))) == 2
+def test_mid_sentence_ellipsis_before_lowercase():
+    assert len(run(text_line("Er dachte... und ging weiter. Ende.", 0.1))) == 2
 
 
 def _cancel_page(last):

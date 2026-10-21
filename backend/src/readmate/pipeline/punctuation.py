@@ -1,8 +1,8 @@
 from readmate.pipeline.normalize import _STRIP
 from readmate.pipeline.types import OcrBox, OcrWord
 
-CLOSING = "“”\"'’‘»«)]"
-OPENING = "„‚»«“([\"'"
+CLOSING = "“”\"'’‘»«›‹)]"
+OPENING = "„‚»«›‹“([\"'"
 ABBREVIATIONS = frozenset(
     "usw bzw Dr Nr ca etc vgl ggf evtl Prof Mio Mrd Jh Str St".split()
 )

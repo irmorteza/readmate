@@ -17,6 +17,7 @@ from readmate.pipeline.punctuation import display_text, ends_by_punctuation
         ("z.B.", False), ("d.h.", False), ("u.a.", False), ("3.10.", False),
         ("usw.", False), ("Dr.", False), ("Mio.", False), ("St.", False), ("(vgl.", False),
         ("3.", False), ("31.", False),
+        ("Komm!‹«", True), ("ja.›", True), ("›Dr.", False), ("›z.B.", False),
         ("ab...", True),  # ellipsis is checked before the dotted-abbreviation rule
     ],
 )
@@ -32,6 +33,8 @@ def _word(page, i=0):
 def test_display_text_keeps_punctuation():
     w, b = _word([[("»Sind", bx(0.1, 0.1))]])
     assert display_text(w, b) == "»Sind"
+    w, b = _word([[("›Sind", bx(0.1, 0.1))]])
+    assert display_text(w, b) == "›Sind"
     w, b = _word([[("Arbeit.", bx(0.1, 0.1))]])
     assert display_text(w, b) == "Arbeit."
     w, b = _word([[("Vorstel-", bx(0.1, 0.1))], [("lungskraft.“", bx(0.1, 0.14))]])
