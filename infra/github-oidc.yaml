@@ -71,13 +71,44 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: TextractDetectDocumentText
+        - PolicyName: OcrExecutionPermissions
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              - Effect: Allow
+              - Sid: TextractDetectDocumentText
+                Effect: Allow
                 Action: textract:DetectDocumentText
                 Resource: "*" # Textract has no resource-level permissions
+              # aws/ssm-encrypted SecureString: no kms statement needed.
+              - Sid: ReadAnthropicApiKey
+                Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AppStackName}/anthropic-api-key"
+              - Sid: WordInfoTableReadWrite
+                Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                Resource: !GetAtt WordInfoTable.Arn
+
+  # Cache and daily counter of the word-info route. Retained: it outlives stack changes.
+  WordInfoTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub "${AppStackName}-word-info"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
 
   # Named outside the "${AppStackName}-" prefix on purpose, so no pattern in its own policy can
   # ever cover it.
@@ -218,3 +249,6 @@ Outputs:
   OcrExecutionRoleArn:
     Description: Set as the OCR_EXECUTION_ROLE_ARN variable of the "production" environment (and ExecutionRoleArn for manual deploys).
     Value: !GetAtt OcrExecutionRole.Arn
+  WordInfoTableName:
+    Description: DynamoDB table of the word-info cache and daily counter.
+    Value: !Ref WordInfoTable

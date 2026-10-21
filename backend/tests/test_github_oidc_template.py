@@ -136,7 +136,12 @@ def test_max_session_duration_is_3600(role):
 
 
 def test_template_contains_exactly_the_expected_resources(template):
-    assert set(template["Resources"]) == {"GitHubOidcProvider", "OcrExecutionRole", "DeployRole"}
+    assert set(template["Resources"]) == {
+        "GitHubOidcProvider",
+        "OcrExecutionRole",
+        "DeployRole",
+        "WordInfoTable",
+    }
 
 
 def test_no_wildcard_actions_and_no_managed_policies_on_deploy_role(role, statements):
@@ -195,10 +200,66 @@ def test_execution_role_trusts_only_lambda_and_has_basic_execution(exec_role):
     assert exec_role["ManagedPolicyArns"] == [LAMBDA_BASIC_EXECUTION]
 
 
-def test_execution_role_inline_policy_allows_only_textract_detect(exec_role):
+def test_execution_role_statements_are_exact(exec_role):
     (policy,) = exec_role["Policies"]
-    (statement,) = policy["PolicyDocument"]["Statement"]
-    assert as_list(statement["Action"]) == ["textract:DetectDocumentText"]
+    statements = policy["PolicyDocument"]["Statement"]
+    actual = {s["Sid"]: (as_list(s["Action"]), as_list(s["Resource"])) for s in statements}
+    assert len(statements) == len(actual) == 3
+    assert actual == {
+        "TextractDetectDocumentText": (["textract:DetectDocumentText"], ["*"]),
+        "ReadAnthropicApiKey": (
+            ["ssm:GetParameter"],
+            ["arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AppStackName}/anthropic-api-key"],
+        ),
+        "WordInfoTableReadWrite": (
+            ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"],
+            ["WordInfoTable.Arn"],
+        ),
+    }
+    for statement in statements:
+        assert statement["Effect"] == "Allow"
+        assert "Condition" not in statement
+        for action in as_list(statement["Action"]):
+            assert "*" not in action, action
+
+
+def test_word_info_table_is_retained_on_demand_with_ttl(template):
+    table = template["Resources"]["WordInfoTable"]
+    assert table["Type"] == "AWS::DynamoDB::Table"
+    assert table["DeletionPolicy"] == "Retain"
+    assert table["UpdateReplacePolicy"] == "Retain"
+    props = table["Properties"]
+    assert props["BillingMode"] == "PAY_PER_REQUEST"
+    assert props["TableName"] == "${AppStackName}-word-info"
+    assert props["KeySchema"] == [{"AttributeName": "pk", "KeyType": "HASH"}]
+    assert props["AttributeDefinitions"] == [{"AttributeName": "pk", "AttributeType": "S"}]
+    assert props["TimeToLiveSpecification"] == {"AttributeName": "expiresAt", "Enabled": True}
+
+
+def test_deploy_role_has_no_dynamodb_ssm_or_kms_actions(statements):
+    actions = {a for s in statements for a in as_list(s["Action"])}
+    assert not {a for a in actions if a.startswith(("dynamodb:", "ssm:", "kms:"))}
+
+
+def test_app_template_word_info_environment():
+    app = load("template.yaml")
+    env = app["Resources"]["OcrFunction"]["Properties"]["Environment"]["Variables"]
+    assert env["WORD_INFO_TABLE"] == "${AWS::StackName}-word-info"
+    assert env["ANTHROPIC_API_KEY_PARAM"] == "/${AWS::StackName}/anthropic-api-key"
+    assert env["WORD_INFO_ENGINE"] == "WordInfoEngine"
+    assert env["WORD_INFO_MODEL"] == "WordInfoModel"
+    assert env["WORD_INFO_DAILY_CAP"] == "WordInfoDailyCap"
+    assert "ANTHROPIC_API_KEY" not in env
+    assert "WORD_INFO_EFFORT" not in env
+    assert not any("sk-ant-" in str(value) for value in env.values())
+    params = app["Parameters"]
+    assert params["WordInfoEngine"]["AllowedValues"] == ["anthropic"]
+    assert params["WordInfoModel"]["Default"] == "claude-haiku-5-5"
+    assert params["WordInfoDailyCap"]["Type"] == "Number"
+    assert params["WordInfoDailyCap"]["Default"] == 500
+    assert params["WordInfoDailyCap"]["MinValue"] == 0
+    for name in ("WordInfoEngine", "WordInfoModel", "WordInfoDailyCap"):
+        assert "Default" in params[name], name
 
 
 def test_execution_role_name_is_derived_from_the_stack_prefix(exec_role):
@@ -241,7 +302,7 @@ def test_parameters_and_outputs(template):
     assert params["AppStackName"]["Default"] == "readmate"
     assert params["AmplifyBranch"]["Default"] == "staging"
     assert params["CreateOidcProvider"]["AllowedValues"] == ["true", "false"]
-    assert set(template["Outputs"]) == {"DeployRoleArn", "OcrExecutionRoleArn"}
+    assert set(template["Outputs"]) == {"DeployRoleArn", "OcrExecutionRoleArn", "WordInfoTableName"}
 
 
 def test_frontend_origin_parameter_only_accepts_a_bare_https_origin():

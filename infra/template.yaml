@@ -23,6 +23,18 @@ Parameters:
     Type: String
     Default: textract
     AllowedValues: [textract] # "fake" needs test fixtures that are not part of the deployed package
+  WordInfoEngine:
+    Type: String
+    Default: anthropic
+    AllowedValues: [anthropic] # "fake" is for tests and local runs only
+  WordInfoModel:
+    Type: String
+    Default: claude-haiku-5-5
+  WordInfoDailyCap:
+    Type: Number
+    Default: 500
+    MinValue: 0
+    Description: Maximum model calls per day (cache hits are free).
 
 Resources:
   OcrFunction:
@@ -41,6 +53,12 @@ Resources:
         Variables:
           PILOT_TOKEN: !Ref PilotToken
           OCR_ENGINE: !Ref OcrEngine
+          WORD_INFO_ENGINE: !Ref WordInfoEngine
+          WORD_INFO_MODEL: !Ref WordInfoModel
+          WORD_INFO_DAILY_CAP: !Ref WordInfoDailyCap
+          WORD_INFO_TABLE: !Sub "${AWS::StackName}-word-info"
+          # Name only: the key itself is read from SSM at runtime, never stored in the template.
+          ANTHROPIC_API_KEY_PARAM: !Sub "/${AWS::StackName}/anthropic-api-key"
       LoggingConfig:
         LogGroup: !Ref OcrLogGroup
       # Created by the bootstrap stack (infra/github-oidc.yaml), so CI needs no IAM write access.
