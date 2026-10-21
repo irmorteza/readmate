@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://readmate.local/word-info.schema.json",
+  "title": "WordInfo",
+  "$defs": {
+    "request": {
+      "type": "object",
+      "required": ["word", "wordIndex", "sentence", "target"],
+      "additionalProperties": true,
+      "properties": {
+        "word": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "wordIndex": { "type": "integer", "minimum": 0 },
+        "sentence": {
+          "type": "object",
+          "required": ["kind", "words"],
+          "additionalProperties": true,
+          "properties": {
+            "kind": { "enum": ["sentence", "fragment", "incomplete"] },
+            "words": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 120,
+              "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+            }
+          }
+        },
+        "target": { "const": "en" }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "word",
+        "lemma",
+        "pos",
+        "phonetic",
+        "translation",
+        "senseInContext",
+        "article",
+        "plural",
+        "exampleDe",
+        "exampleEn",
+        "separableVerb",
+        "expression",
+        "meta"
+      ],
+      "properties": {
+        "version": { "const": 1 },
+        "word": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "lemma": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "pos": {
+          "enum": [
+            "noun",
+            "verb",
+            "adjective",
+            "adverb",
+            "pronoun",
+            "preposition",
+            "conjunction",
+            "article",
+            "numeral",
+            "particle",
+            "interjection",
+            "proper-noun",
+            "other"
+          ]
+        },
+        "phonetic": { "type": "string", "maxLength": 80 },
+        "translation": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "senseInContext": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "article": { "enum": ["der", "die", "das", null] },
+        "plural": { "type": ["string", "null"], "maxLength": 64 },
+        "exampleDe": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "exampleEn": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "separableVerb": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["infinitive", "wordIndexes"],
+              "properties": {
+                "infinitive": { "type": "string", "minLength": 1, "maxLength": 64 },
+                "wordIndexes": { "$ref": "#/$defs/wordIndexes" }
+              }
+            }
+          ]
+        },
+        "expression": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["text", "meaning", "type", "wordIndexes"],
+              "properties": {
+                "text": { "type": "string", "minLength": 1, "maxLength": 120 },
+                "meaning": { "type": "string", "minLength": 1, "maxLength": 200 },
+                "type": { "enum": ["collocation", "idiom", "verb-pattern", "fixed-phrase"] },
+                "wordIndexes": { "$ref": "#/$defs/wordIndexes" }
+              }
+            }
+          ]
+        },
+        "meta": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cached",
+            "model",
+            "latencyMs",
+            "promptVersion",
+            "attempts",
+            "stopReasons",
+            "outputTokens"
+          ],
+          "properties": {
+            "cached": { "type": "boolean" },
+            "model": { "type": "string" },
+            "latencyMs": { "type": "integer", "minimum": 0 },
+            "promptVersion": { "type": "string" },
+            "attempts": { "type": "integer", "minimum": 0, "maximum": 2 },
+            "stopReasons": { "type": "array", "items": { "type": "string" } },
+            "outputTokens": { "type": "array", "items": { "type": "integer" } }
+          }
+        }
+      }
+    },
+    "wordIndexes": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": { "type": "integer", "minimum": 0 }
+    },
+    "error": {
+      "type": "object",
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": ["code", "message"],
+          "properties": {
+            "code": { "type": "string" },
+            "message": { "type": "string" },
+            "stopReasons": { "type": "array", "items": { "type": "string" } },
+            "outputTokens": { "type": "array", "items": { "type": "integer" } }
+          }
+        }
+      }
+    }
+  }
+}

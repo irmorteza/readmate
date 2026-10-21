@@ -1,0 +1,52 @@
+{
+  "request": {
+    "word": "stellte",
+    "wordIndex": 1,
+    "sentence": {
+      "kind": "sentence",
+      "words": [
+        "Er",
+        "stellte",
+        "sich",
+        "den",
+        "Gästen",
+        "vor."
+      ]
+    },
+    "target": "en"
+  },
+  "response": {
+    "version": 1,
+    "word": "stellte",
+    "lemma": "vorstellen",
+    "pos": "verb",
+    "phonetic": "",
+    "translation": "to introduce",
+    "senseInContext": "A fake explanation of this word.",
+    "article": null,
+    "plural": null,
+    "exampleDe": "Das ist ein Beispiel.",
+    "exampleEn": "This is an example.",
+    "separableVerb": {
+      "infinitive": "vorstellen",
+      "wordIndexes": [
+        1,
+        5
+      ]
+    },
+    "expression": null,
+    "meta": {
+      "cached": false,
+      "model": "fake",
+      "latencyMs": 0,
+      "promptVersion": "wi-1",
+      "attempts": 1,
+      "stopReasons": [
+        "end_turn"
+      ],
+      "outputTokens": [
+        83
+      ]
+    }
+  }
+}
