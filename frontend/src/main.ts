@@ -4,7 +4,7 @@ import { createController, errorMessage, type State } from "./app";
 import { renderBottomNav } from "./bottom-nav";
 import { BUILD_SHA } from "./build-info";
 import { button, h } from "./dom";
-import { getDevMode, setDevMode } from "./dev-mode";
+import { getDevMode, setDevMode, subscribeDevMode } from "./dev-mode";
 import { createDrawer } from "./drawer";
 import { createEmptyView } from "./empty-view";
 import { renderHeader } from "./header";
@@ -113,6 +113,8 @@ function screenFor(state: State): HTMLElement {
         onNewPhoto: () => controller.newPhoto(),
         speak: pronounce,
         comingSoon,
+        devMode: { get: getDevMode, subscribe: subscribeDevMode },
+        build: BUILD_SHA,
       });
     case "error":
       return screenError(state);

@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { parseOcrResult } from "./contract";
+import { setClipboard } from "./debug-test-helpers";
 import { createResultView } from "./result-view";
+import { clearToken, saveToken } from "./settings";
 import { declarations } from "./test-css";
-import { emptyResult, gappedResult } from "./test-fixtures";
+import { emptyResult, gappedResult, sentenceResult } from "./test-fixtures";
 import type { TranslationService, WordInfo } from "./translation";
 
 const info = (word: string): WordInfo => ({
@@ -17,20 +20,31 @@ function service(lookup?: TranslationService["lookup"]): TranslationService & { 
   return { lookup: vi.fn(lookup ?? (async (word: string) => info(word))) };
 }
 
+function fakeDevMode(initial = false) {
+  let on = initial;
+  const subs = new Set<(on: boolean) => void>();
+  return {
+    get: () => on,
+    subscribe: (fn: (on: boolean) => void) => (subs.add(fn), () => subs.delete(fn)),
+    set(next: boolean) { on = next; subs.forEach((fn) => fn(next)); },
+  };
+}
+
 function mount(
   result = gappedResult,
   translation: TranslationService = service(),
   extra: { pageLabel?: string; sentenceTranslation?: string } = {},
+  devMode = fakeDevMode(),
 ) {
   const onNewPhoto = vi.fn();
   const speak = vi.fn();
   const comingSoon = vi.fn();
   const view = createResultView(
     { result, imageUrl: "blob:img", ...extra },
-    { translation, onNewPhoto, speak, comingSoon },
+    { translation, onNewPhoto, speak, comingSoon, devMode, build: "abc1234" },
   );
   document.body.replaceChildren(view);
-  return { view, onNewPhoto, translation, speak, comingSoon };
+  return { view, onNewPhoto, translation, speak, comingSoon, devMode };
 }
 
 const pane = (name: string) => document.querySelector<HTMLElement>(`[data-pane="${name}"]`)!;
@@ -353,5 +367,125 @@ describe("Clean Text reads like a continuous paragraph", () => {
     expect(before).toContain('content: ""');
     expect(before).toContain("position: absolute");
     expect(before).toMatch(/inset:\s*-0\.1875rem/);
+  });
+});
+
+describe("sentences and developer mode", () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  const outlined = () => [...document.querySelectorAll<HTMLElement>(".word.hl-sentence")].map((e) => Number(e.dataset.wordId));
+  const outlinedBoxes = () => [...document.querySelectorAll<HTMLElement>(".box.hl-sentence")].map((e) => Number(e.dataset.boxId));
+  const panel = () => document.querySelector<HTMLDetailsElement>("details.debug")!;
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+
+  it("looks up with the sentence text as context", () => {
+    const { translation } = mount(sentenceResult);
+    word(9).click();
+    expect(translation.lookup).toHaveBeenCalledWith("war", "Vorstellungskraft war");
+  });
+
+  it("looks up with the joined lines when there are no sentences", () => {
+    const { translation } = mount(gappedResult);
+    word(2).click();
+    expect(translation.lookup).toHaveBeenCalledWith("Vorstellungskraft", "Das Vorstel- war lungskraft groß");
+  });
+
+  it("with developer mode off: no outline, debug panel hidden and empty", () => {
+    mount(sentenceResult);
+    word(9).click();
+    expect(outlined()).toEqual([]);
+    expect(panel().hidden).toBe(true);
+    expect(panel().querySelector(".debug-body")!.textContent).toBe("");
+  });
+
+  it("with developer mode on: outlines the sentence in text and image, panel present and closed", () => {
+    mount(sentenceResult, service(), {}, fakeDevMode(true));
+    word(9).click();
+    expect(outlined()).toEqual([2, 9]);
+    expect(outlinedBoxes().sort((a, b) => a - b)).toEqual([3, 7, 12]);
+    expect(panel().hidden).toBe(false);
+    expect(panel().open).toBe(false);
+  });
+
+  it("a highlighted neighbour is still tappable and selects itself", () => {
+    const { translation } = mount(sentenceResult, service(), {}, fakeDevMode(true));
+    word(9).click();
+    word(2).click();
+    expect(word(2).classList.contains("selected")).toBe(true);
+    expect(translation.lookup).toHaveBeenLastCalledWith("Vorstellungskraft", "Vorstellungskraft war");
+  });
+
+  it("a tap on a word without a sentence clears the outline", () => {
+    const result = { ...sentenceResult, sentences: [{ id: 0, kind: "fragment" as const, wordIds: [2], text: "Vorstellungskraft" }] };
+    mount(result, service(), {}, fakeDevMode(true));
+    word(2).click();
+    expect(outlined()).toEqual([2]);
+    word(9).click();
+    expect(outlined()).toEqual([]);
+  });
+
+  it("closing the sheet clears the outline and the panel", () => {
+    mount(sentenceResult, service(), {}, fakeDevMode(true));
+    word(9).click();
+    document.querySelector<HTMLButtonElement>('.sheet button[aria-label="Close"]')!.click();
+    expect(outlined()).toEqual([]);
+    expect(panel().hidden).toBe(true);
+  });
+
+  it("turning developer mode off clears at once and a late lookup does not bring it back", async () => {
+    let resolve!: (info: WordInfo) => void;
+    const dev = fakeDevMode(true);
+    mount(sentenceResult, service(() => new Promise((r) => (resolve = r))), {}, dev);
+    word(9).click();
+    dev.set(false);
+    expect(outlined()).toEqual([]);
+    expect(panel().hidden).toBe(true);
+    resolve(info("war"));
+    await flush();
+    expect(panel().hidden).toBe(true);
+    expect(outlined()).toEqual([]);
+  });
+
+  it("shows the result of the latest tap only", async () => {
+    const pending: Array<(i: WordInfo) => void> = [];
+    mount(sentenceResult, service(() => new Promise((r) => pending.push(r))), {}, fakeDevMode(true));
+    word(2).click();
+    word(9).click();
+    pending[1](info("war"));
+    pending[0](info("Vorstellungskraft"));
+    await flush();
+    const resultText = panel().querySelector('[data-debug="result"]')!.textContent!;
+    expect(resultText).toContain("Translated war");
+    expect(resultText).not.toContain("Translated Vorstellungskraft");
+  });
+
+  it("an ignored-sentences result still shows and selects words, and the panel says so", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const ignored = parseOcrResult({ ...structuredClone(gappedResult), sentences: [{ id: 0, kind: "x", wordIds: [2], text: "" }] })!;
+    mount(ignored, service(), {}, fakeDevMode(true));
+    word(2).click();
+    expect(word(2).classList.contains("selected")).toBe(true);
+    expect(panel().textContent).toContain("Sentence data was malformed and ignored");
+  });
+
+  it("never puts the token or a request header in the DOM or the copied JSON", async () => {
+    saveToken("tok-SECRET-123");
+    const writeText = vi.fn(async (_text: string) => {});
+    setClipboard({ writeText });
+    mount(sentenceResult, service(), {}, fakeDevMode(true));
+    word(9).click();
+    panel().open = true;
+    await flush();
+    document.querySelector<HTMLButtonElement>("button.debug-copy")!.click();
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    for (const text of [document.body.innerHTML, writeText.mock.calls[0][0]]) {
+      expect(text).not.toContain("tok-SECRET-123");
+      expect(text).not.toContain("X-Pilot-Token");
+    }
+    clearToken();
+    setClipboard(undefined);
   });
 });
