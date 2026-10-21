@@ -57,6 +57,17 @@ PWA ── POST /v1/word-info (JSON, X-Pilot-Token) ──► Lambda handler (ro
   - `engines/base.py` gains a `WordInfoEngine` protocol. `engines/anthropic_word_info.py` is the real engine and `engines/fake_word_info.py` the fake, the same adapter pattern as OCR.
 - **Engine contract:** `explain(system: str, user: str, schema: dict, timeout_s: float) -> EngineReply(text: str, stop_reason: str, input_tokens: int, output_tokens: int)`. Engines do no validation; the service validates the output of both engines the same way.
 - **Engine choice:** `WORD_INFO_ENGINE` = `anthropic` (deployed; the template allows only this value) or `fake` (tests, `run.ps1 -Engine fake`). Store choice: `DynamoStore` when `WORD_INFO_TABLE` is set, else `MemoryStore` (local dev).
+- **Provider independence:** the engine layer (`readmate/engines/`) is the only code that knows the LLM provider. The prompt, the model-output schema, validation, cache, counter, service, handler and public API are provider-neutral.
+  - `engines/word_info_registry.py` maps an engine name to `(module, class, default model)` as strings, without importing anything.
+  - Each engine class builds itself with `from_env(env, model)`, including its own provider-specific settings, such as the Anthropic key parameter name.
+  - Adding a provider later means one new engine module (its SDK imported at that module's top, and the module itself imported only lazily), one registry line, and one `AllowedValues` entry for `WordInfoEngine` in `infra/template.yaml`.
+  - A test enforces that no module outside `readmate/engines/` imports `anthropic`.
+- **Import isolation:** the OCR path never imports an LLM SDK. `handler.py` and every module it imports at module level must not import `anthropic`, any `readmate.engines.*_word_info` provider module, or anything that pulls in pydantic or httpx/httpx2.
+  - The engine module is imported (`importlib.import_module`) inside the word-info path, on the first request that misses the cache.
+  - If that import fails (for example a wrong-architecture wheel), the error is logged with its traceback and word-info answers `503 NOT_CONFIGURED`. The next request tries again, and OCR keeps working.
+  - Tests:
+    - a fresh interpreter (subprocess) imports `readmate.handler`, and `anthropic`, `pydantic` and `httpx2` are not in `sys.modules`;
+    - with the SDK import forced to raise `ImportError`, `POST /v1/word-info` returns 503 and an OCR request still returns 200.
 
 ## 4. API contract
 
@@ -129,7 +140,7 @@ The server rebuilds the text from `words`; no free-text context is accepted. **T
 | 429 | `DAILY_LIMIT` | daily cap reached (no model call) |
 | 429 | `BUSY` | Anthropic 429/529 after the retry budget |
 | 502 | `LOOKUP_FAILED` | model timeout, transport error, invalid output, refusal, `max_tokens`; the body adds `error.stopReasons` / `error.outputTokens` when a model answered (§9) |
-| 503 | `NOT_CONFIGURED` | API key parameter unreadable, or counter/table unavailable |
+| 503 | `NOT_CONFIGURED` | engine module or SDK fails to import, API key parameter unreadable, or counter/table unavailable |
 | 500 | `INTERNAL` | anything else |
 
 ### 4.4 Contract files

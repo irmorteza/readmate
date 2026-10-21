@@ -6,7 +6,7 @@
 
 **Architecture:**
 - A new package `backend/src/readmate/wordinfo/` holds request parsing, prompt, output validation, cache/counter store, secret loading and the orchestrating service.
-- Engines sit behind a protocol in `engines/`, as for OCR: an Anthropic engine and a fake.
+- Engines sit behind a protocol in `engines/`, as for OCR: an Anthropic engine and a fake. A string-only registry (`engines/word_info_registry.py`) names them, and the chosen engine module is imported lazily on the first cache miss.
 - `handler.py` routes on `rawPath`, and every other path keeps today's OCR behaviour.
 - Infra changes go to `infra/github-oidc.yaml`: the table and two execution-role statements. `infra/template.yaml` gets parameters with defaults and environment variables.
 
@@ -26,6 +26,14 @@
 - **Names:** table `readmate-word-info` (`${AppStackName}-word-info`); SSM parameter `/readmate/anthropic-api-key` (`/${AppStackName}/anthropic-api-key`); environment variables `WORD_INFO_ENGINE`, `WORD_INFO_MODEL`, `WORD_INFO_EFFORT`, `WORD_INFO_DAILY_CAP`, `WORD_INFO_TABLE`, `ANTHROPIC_API_KEY_PARAM`.
 - **Error codes:** `BAD_REQUEST` 400, `UNAUTHORIZED` 401, `METHOD_NOT_ALLOWED` 405, `DAILY_LIMIT` 429, `BUSY` 429, `LOOKUP_FAILED` 502, `NOT_CONFIGURED` 503, `INTERNAL` 500.
 - **Secrets:** the API key value never appears in code, tests, logs, exceptions, responses or environment variables. Tests never construct a real `anthropic.Anthropic` client, and nothing calls the network.
+- **Import isolation (spec §3):**
+  - `handler.py` and every module it imports at module level never import `anthropic`, `readmate.engines.anthropic_word_info`, pydantic or httpx/httpx2.
+  - The engine module is imported with `importlib` inside the word-info path.
+  - An import failure → logged with traceback, `503 NOT_CONFIGURED`, retried on the next request; OCR unaffected.
+- **Provider independence (spec §3):**
+  - Only `readmate/engines/` knows the provider. `wordinfo/*`, `handler.py`, the prompt, schema, validation, cache, counter and API stay provider-neutral.
+  - The only provider-specific names outside `engines/` are the infra/run-script settings (`ANTHROPIC_API_KEY_PARAM`, the template `AllowedValues`).
+  - A new provider means one engine module, one registry line and one `AllowedValues` entry.
 - **Do not deploy or push.** Do not run `aws cloudformation deploy`. The owner runs §8.4. Local commits only.
 - Run backend commands from `backend/`: `.venv/Scripts/python -m pytest -q`, `.venv/Scripts/ruff check .`. Install new pins with `.venv/Scripts/pip install -r requirements-dev.txt`.
 
@@ -33,7 +41,7 @@
 
 - A JSON body that is not an object (`null`, `[]`, `"x"`, `3`), a `wordIndex` of `true`/`1.0`/`"1"`, or `words` containing a non-string must each give 400, not 500. Python's `bool` is an `int`. Tests in Task 1.
 - An NFD-encoded word (`Verfügung`) must match its NFC counterpart in the `word`-in-`words[wordIndex]` check and give the same cache key. Test in Task 1.
-- Model output with `wordIndexes` containing `true` or `1.0`, extra keys, or no `text` block (only thinking blocks) is invalid output: retried once, never cached, never a 500. Tests in Tasks 3 and 5.
+- Model output with `wordIndexes` containing `true` or `1.0`, extra keys, or no `text` block (only thinking blocks) is invalid output: retried once, never cached, never a 500. Tests in Tasks 3 and 7.
 - A word containing `</words>` or `<kind>` must not be able to close the user-message delimiters. Tests in Task 2.
 - The dev server passes `context=None`, and the deadline helper must not crash: `remaining_ms` falls back to 15 000. Test in Task 9.
 
@@ -236,20 +244,29 @@ def test_reason_never_contains_model_text(): ...   # translation "SECRET-X"*20 t
 
 ---
 
-### Task 4: Engine protocol and fake engine
+### Task 4: Engine protocol, registry and fake engine
 
 **Files:**
 - Modify: `backend/src/readmate/engines/base.py`
-- Create: `backend/src/readmate/engines/fake_word_info.py`
-- Test: `backend/tests/test_fake_word_info.py`
+- Create: `backend/src/readmate/engines/fake_word_info.py`, `backend/src/readmate/engines/word_info_registry.py`
+- Test: `backend/tests/test_fake_word_info.py`, `backend/tests/test_word_info_registry.py`
 
 **Interfaces:**
 - Consumes: `prompt.USER_TEMPLATE` format (Task 2), `validate_model_output` (Task 3, in tests only).
 - Produces (in `engines/base.py`):
   - `@dataclass(frozen=True) class EngineReply: text: str; stop_reason: str; input_tokens: int; output_tokens: int`.
   - `class EngineError(Exception)` with `__init__(self, kind: Literal["transient", "busy", "fatal"], detail: str)`. Its attributes are `.kind` and `.detail`, and `.detail` is a safe class or status string only.
-  - `class WordInfoEngine(Protocol): name: str; model: str; def explain(self, system: str, user: str, schema: dict, timeout_s: float) -> EngineReply: ...`.
-- Produces (in `fake_word_info.py`): `class FakeWordInfoEngine` with `name = "fake"`, `model = "fake"`, and `__init__(self, script: list[EngineReply | Exception] | None = None)`.
+  - `class WordInfoEngine(Protocol)`:
+    - `name: str; model: str`
+    - `def explain(self, system: str, user: str, schema: dict, timeout_s: float) -> EngineReply: ...`
+    - `@classmethod def from_env(cls, env: Mapping[str, str], model: str) -> "WordInfoEngine": ...`
+    - `from_env` reads the engine's own provider-specific settings and may raise `SecretUnavailable` (Task 5).
+  - `base.py` keeps importing only stdlib and `readmate.pipeline.types`.
+- Produces (in `word_info_registry.py`, stdlib imports only):
+  - `class EngineSpec(NamedTuple): module: str; cls: str; default_model: str`.
+  - `WORD_INFO_ENGINES: dict[str, EngineSpec] = {"anthropic": EngineSpec("readmate.engines.anthropic_word_info", "AnthropicWordInfoEngine", "claude-haiku-5-5"), "fake": EngineSpec("readmate.engines.fake_word_info", "FakeWordInfoEngine", "fake")}`.
+  - `load_engine_class(name: str) -> type`, which uses `importlib.import_module` + `getattr`. An unknown name raises `ValueError`, and an `ImportError` propagates unchanged.
+- Produces (in `fake_word_info.py`): `class FakeWordInfoEngine` with `name = "fake"`, `model = "fake"`, `from_env(env, model)` → `cls()`, and `__init__(self, script: list[EngineReply | Exception] | None = None)`.
   - With a script, each call pops and returns the next item, or raises it if it is an exception.
   - Without a script, it parses `<tapped_index>` and `<words>` from `user` and answers deterministically.
   - It records the calls in `self.calls: list[dict]`.
@@ -261,6 +278,10 @@ def test_reason_never_contains_model_text(): ...   # translation "SECRET-X"*20 t
   - Any other word → generic noun-free answer, both groups null, lemma = word without punctuation.
   - A scripted run returns `EngineReply`s in order and raises a scripted `EngineError`.
   - `stop_reason == "end_turn"`; `output_tokens == len(text) // 4`.
+  - **Registry tests (`test_word_info_registry.py`):**
+    - `load_engine_class("fake") is FakeWordInfoEngine`; `load_engine_class("nope")` raises `ValueError`.
+    - With `monkeypatch.setitem(sys.modules, "readmate.engines.fake_word_info", None)`, `load_engine_class("fake")` raises `ImportError`.
+    - The `anthropic` spec names module `readmate.engines.anthropic_word_info` and default model `claude-haiku-5-5`.
 
 - [ ] **Step 2: Run, expect failure.**
 
@@ -272,65 +293,36 @@ def test_reason_never_contains_model_text(): ...   # translation "SECRET-X"*20 t
 
 - [ ] **Step 4: Run → pass.**
 
-- [ ] **Step 5: Commit** — `feat(backend): word-info engine protocol and fake engine`.
+- [ ] **Step 5: Commit** — `feat(backend): word-info engine protocol, registry and fake engine`.
 
 ---
 
-### Task 5: Anthropic engine and SDK pin
+### Task 5: API key from SSM
 
 **Files:**
-- Modify: `backend/src/requirements.txt` (add `anthropic==1.15.0`)
-- Create: `backend/src/readmate/engines/anthropic_word_info.py`
-- Test: `backend/tests/test_anthropic_word_info.py`
+- Create: `backend/src/readmate/wordinfo/secrets.py`
+- Test: `backend/tests/test_word_info_secrets.py`
 
 **Interfaces:**
-- Consumes: `EngineReply`, `EngineError`, `WordInfoEngine` (Task 4).
-- Produces: `class AnthropicWordInfoEngine` with `name = "anthropic"` and `__init__(self, api_key: str, model: str, effort: str = "low", client: object | None = None)`.
-  - Without `client`, it builds `anthropic.Anthropic(api_key=api_key, max_retries=0, timeout=anthropic.Timeout(8.0, connect=2.0))`.
-  - It has `.model` and `MAX_TOKENS = 1500`.
+- Produces:
+  - `class SecretUnavailable(Exception)`, whose message is always `"api key unavailable"`.
+  - `get_api_key(param_name: str, client=None) -> str`: cached in a module global after the first success; `client` defaults to `boto3.client("ssm")`.
+  - `_reset_for_tests() -> None`.
 
-- [ ] **Step 1: Install and confirm the SDK surface.**
-  - Run `.venv/Scripts/pip install -r requirements-dev.txt`.
-  - Run `.venv/Scripts/python -c "import anthropic; print(anthropic.__version__); anthropic.Timeout; anthropic.APITimeoutError; anthropic.APIConnectionError; anthropic.RateLimitError; anthropic.APIStatusError; anthropic.InternalServerError"`.
-  - Expected: `1.15.0` and no AttributeError. If a name differs in 1.15.0, use the SDK's actual name and note it in the commit.
+- [ ] **Step 1: Write failing tests (Stubber on an `ssm` client).**
+  - Success → `GetParameter` called once with `{"Name": "/readmate/anthropic-api-key", "WithDecryption": True}`; a second call returns the cached value with no further request (the stubber has only one response queued).
+  - `ParameterNotFound` → `SecretUnavailable`, then a later successful call works (nothing is cached on failure).
+  - `AccessDeniedException` → `SecretUnavailable`.
+  - Empty value → `SecretUnavailable`.
+  - The value `sk-test-VALUE-123` never appears in `caplog.text` or in `str(exc)` on any path.
 
-- [ ] **Step 2: Write failing tests.** These use a fake client: an object whose `.messages.create(**kwargs)` records the kwargs and returns a `SimpleNamespace` message, or raises. SDK errors are built with `httpx2`/SDK constructors as the SDK's own tests do; if that is awkward, subclass the SDK exception and bypass `__init__` with `Exc.__new__(Exc)` plus the attributes it needs.
+- [ ] **Step 2: Run, expect failure.**
 
-```python
-def test_request_parameters():
-    client = FakeClient(reply=msg([thinking_block(), text_block('{"a":1}')], "end_turn", 900, 300))
-    eng = AnthropicWordInfoEngine("k", "claude-haiku-5-5", "low", client=client)
-    r = eng.explain("SYS", "USER", {"type": "object"}, 8.0)
-    kw = client.calls[0]
-    assert kw["model"] == "claude-haiku-5-5" and kw["max_tokens"] == 1500 and kw["system"] == "SYS"
-    assert kw["messages"] == [{"role": "user", "content": "USER"}]
-    assert kw["output_config"] == {"effort": "low",
-                                   "format": {"type": "json_schema", "schema": {"type": "object"}}}
-    assert kw["timeout"] == 8.0
-    assert not {"temperature", "top_p", "top_k", "thinking", "tools", "tool_choice"} & kw.keys()
-    assert r == EngineReply('{"a":1}', "end_turn", 900, 300)   # text block found by type, not position
-def test_no_text_block_gives_empty_text(): ...      # only thinking → EngineReply("", ...)
-@pytest.mark.parametrize("exc,kind", [(APITimeoutError, "transient"), (APIConnectionError, "transient"),
-    (RateLimitError, "busy"), (status_error(529), "busy"), (status_error(500), "transient"),
-    (status_error(400), "fatal"), (status_error(401), "fatal"), (status_error(404), "fatal")])
-def test_errors_are_mapped(exc, kind): ...          # EngineError.kind; detail has no message body
-def test_default_client_is_configured_without_network(monkeypatch):
-    seen = {}
-    monkeypatch.setattr(anthropic, "Anthropic", lambda **kw: seen.update(kw) or object())
-    AnthropicWordInfoEngine("k", "m")
-    assert seen["max_retries"] == 0 and seen["timeout"].read == 8.0 and seen["timeout"].connect == 2.0
-```
+- [ ] **Step 3: Implement.** Catch `ClientError` / `BotoCoreError` and `raise SecretUnavailable("api key unavailable") from None`. Use no f-string containing the value.
 
-- [ ] **Step 3: Run, expect failure.**
+- [ ] **Step 4: Run → pass.**
 
-- [ ] **Step 4: Implement.**
-  - Map errors most-specific first: `APIConnectionError` (this covers `APITimeoutError`) → transient; `RateLimitError` → busy; `APIStatusError` with status 529 → busy, ≥ 500 → transient, else fatal.
-  - `detail = f"{type(e).__name__}:{getattr(e, 'status_code', '')}"`.
-  - Usage comes from `message.usage.input_tokens` / `output_tokens`.
-
-- [ ] **Step 5: Run → pass; also run the full suite (the SDK import must not break the OCR tests).**
-
-- [ ] **Step 6: Commit** — `feat(backend): Anthropic word-info engine (anthropic==1.15.0)`.
+- [ ] **Step 5: Commit** — `feat(backend): load the Anthropic API key from SSM at runtime`.
 
 ---
 
@@ -372,32 +364,69 @@ def test_default_client_is_configured_without_network(monkeypatch):
 
 ---
 
-### Task 7: API key from SSM
+### Task 7: Anthropic engine and SDK pin
 
 **Files:**
-- Create: `backend/src/readmate/wordinfo/secrets.py`
-- Test: `backend/tests/test_word_info_secrets.py`
+- Modify: `backend/src/requirements.txt` (add `anthropic==1.15.0`)
+- Create: `backend/src/readmate/engines/anthropic_word_info.py`
+- Test: `backend/tests/test_anthropic_word_info.py`
 
 **Interfaces:**
-- Produces:
-  - `class SecretUnavailable(Exception)`, whose message is always `"api key unavailable"`.
-  - `get_api_key(param_name: str, client=None) -> str`: cached in a module global after the first success; `client` defaults to `boto3.client("ssm")`.
-  - `_reset_for_tests() -> None`.
+- Consumes: `EngineReply`, `EngineError`, `WordInfoEngine` (Task 4); `get_api_key`, `SecretUnavailable` (Task 5).
+- Produces: `class AnthropicWordInfoEngine` with `name = "anthropic"` and `__init__(self, api_key: str, model: str, effort: str = "low", client: object | None = None)`.
+  - Without `client`, it builds `anthropic.Anthropic(api_key=api_key, max_retries=0, timeout=anthropic.Timeout(8.0, connect=2.0))`.
+  - It has `.model` and `MAX_TOKENS = 1500`.
+  - `from_env(env, model)` → `cls(get_api_key(env["ANTHROPIC_API_KEY_PARAM"]), model, env.get("WORD_INFO_EFFORT", "low"))`. A missing `ANTHROPIC_API_KEY_PARAM` raises `SecretUnavailable`.
+  - **This module is the only file in `backend/src` that imports `anthropic`.** It does so at its top; the module itself is reached only through `load_engine_class`.
 
-- [ ] **Step 1: Write failing tests (Stubber on an `ssm` client).**
-  - Success → `GetParameter` called once with `{"Name": "/readmate/anthropic-api-key", "WithDecryption": True}`; a second call returns the cached value with no further request (the stubber has only one response queued).
-  - `ParameterNotFound` → `SecretUnavailable`, then a later successful call works (nothing is cached on failure).
-  - `AccessDeniedException` → `SecretUnavailable`.
-  - Empty value → `SecretUnavailable`.
-  - The value `sk-test-VALUE-123` never appears in `caplog.text` or in `str(exc)` on any path.
+- [ ] **Step 1: Install and confirm the SDK surface.**
+  - Run `.venv/Scripts/pip install -r requirements-dev.txt`.
+  - Run `.venv/Scripts/python -c "import anthropic; print(anthropic.__version__); anthropic.Timeout; anthropic.APITimeoutError; anthropic.APIConnectionError; anthropic.RateLimitError; anthropic.APIStatusError; anthropic.InternalServerError"`.
+  - Expected: `1.15.0` and no AttributeError. If a name differs in 1.15.0, use the SDK's actual name and note it in the commit.
 
-- [ ] **Step 2: Run, expect failure.**
+- [ ] **Step 2: Write failing tests.** These use a fake client: an object whose `.messages.create(**kwargs)` records the kwargs and returns a `SimpleNamespace` message, or raises. SDK errors are built with `httpx2`/SDK constructors as the SDK's own tests do; if that is awkward, subclass the SDK exception and bypass `__init__` with `Exc.__new__(Exc)` plus the attributes it needs.
 
-- [ ] **Step 3: Implement.** Catch `ClientError` / `BotoCoreError` and `raise SecretUnavailable("api key unavailable") from None`. Use no f-string containing the value.
+```python
+def test_request_parameters():
+    client = FakeClient(reply=msg([thinking_block(), text_block('{"a":1}')], "end_turn", 900, 300))
+    eng = AnthropicWordInfoEngine("k", "claude-haiku-5-5", "low", client=client)
+    r = eng.explain("SYS", "USER", {"type": "object"}, 8.0)
+    kw = client.calls[0]
+    assert kw["model"] == "claude-haiku-5-5" and kw["max_tokens"] == 1500 and kw["system"] == "SYS"
+    assert kw["messages"] == [{"role": "user", "content": "USER"}]
+    assert kw["output_config"] == {"effort": "low",
+                                   "format": {"type": "json_schema", "schema": {"type": "object"}}}
+    assert kw["timeout"] == 8.0
+    assert not {"temperature", "top_p", "top_k", "thinking", "tools", "tool_choice"} & kw.keys()
+    assert r == EngineReply('{"a":1}', "end_turn", 900, 300)   # text block found by type, not position
+def test_no_text_block_gives_empty_text(): ...      # only thinking → EngineReply("", ...)
+@pytest.mark.parametrize("exc,kind", [(APITimeoutError, "transient"), (APIConnectionError, "transient"),
+    (RateLimitError, "busy"), (status_error(529), "busy"), (status_error(500), "transient"),
+    (status_error(400), "fatal"), (status_error(401), "fatal"), (status_error(404), "fatal")])
+def test_errors_are_mapped(exc, kind): ...          # EngineError.kind; detail has no message body
+def test_default_client_is_configured_without_network(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(anthropic, "Anthropic", lambda **kw: seen.update(kw) or object())
+    AnthropicWordInfoEngine("k", "m")
+    assert seen["max_retries"] == 0 and seen["timeout"].read == 8.0 and seen["timeout"].connect == 2.0
+def test_from_env_reads_key_param_and_effort(monkeypatch):
+    # get_api_key monkeypatched on the engine module to return "k" and record the name
+    eng = AnthropicWordInfoEngine.from_env({"ANTHROPIC_API_KEY_PARAM": "/readmate/anthropic-api-key",
+                                            "WORD_INFO_EFFORT": "medium"}, "claude-haiku-5-5")
+    assert (eng.model, eng.effort) == ("claude-haiku-5-5", "medium")   # client constructor patched as above
+def test_from_env_without_param_raises_secret_unavailable(): ...
+```
 
-- [ ] **Step 4: Run → pass.**
+- [ ] **Step 3: Run, expect failure.**
 
-- [ ] **Step 5: Commit** — `feat(backend): load the Anthropic API key from SSM at runtime`.
+- [ ] **Step 4: Implement.**
+  - Map errors most-specific first: `APIConnectionError` (this covers `APITimeoutError`) → transient; `RateLimitError` → busy; `APIStatusError` with status 529 → busy, ≥ 500 → transient, else fatal.
+  - `detail = f"{type(e).__name__}:{getattr(e, 'status_code', '')}"`.
+  - Usage comes from `message.usage.input_tokens` / `output_tokens`.
+
+- [ ] **Step 5: Run → pass; also run the full suite (the SDK import must not break the OCR tests).**
+
+- [ ] **Step 6: Commit** — `feat(backend): Anthropic word-info engine (anthropic==1.15.0)`.
 
 ---
 
@@ -414,17 +443,22 @@ def test_default_client_is_configured_without_network(monkeypatch):
   - `RETRY_MIN_REMAINING_MS = 9_500`, `ENGINE_TIMEOUT_S = 8.0`.
   - `class WordInfoService` with `__init__(self, engine_factory: Callable[[], WordInfoEngine], store: CacheStore, model: str, daily_cap: int, lru: LruCache | None = None, clock: Callable[[], float] = time.monotonic)`.
   - `lookup(self, req: WordInfoRequest, remaining_ms: Callable[[], int]) -> dict`, which returns the full response including `meta`.
-  - `service_from_env(env: Mapping[str, str]) -> WordInfoService`:
-    - `WORD_INFO_ENGINE` `fake` gives `FakeWordInfoEngine` with model `"fake"`; `anthropic` (the default) gives a lazy factory: `get_api_key(env["ANTHROPIC_API_KEY_PARAM"])`, then `AnthropicWordInfoEngine(key, env.get("WORD_INFO_MODEL", "claude-haiku-5-5"), env.get("WORD_INFO_EFFORT", "low"))`, built once and reused.
+  - `service_from_env(env: Mapping[str, str]) -> WordInfoService`, provider-neutral:
+    - `name = env.get("WORD_INFO_ENGINE", "anthropic")`; `spec = WORD_INFO_ENGINES[name]` (an unknown name raises `ValueError` at service build; the template's `AllowedValues` prevents it in AWS).
+    - `model = env.get("WORD_INFO_MODEL", spec.default_model)`.
+    - The factory is `lambda: load_engine_class(name).from_env(env, model)`. It is called only on a cache miss, and the engine is built once and reused after the first success.
     - The store is `DynamoStore(env["WORD_INFO_TABLE"])` if that is set, else `MemoryStore()`.
     - The cap is `int(env.get("WORD_INFO_DAILY_CAP", "500"))`.
-    - The anthropic engine module is imported inside the factory, never at module import.
+    - `service.py` imports `word_info_registry` and `base` only, never an engine module.
 
 **Flow of `lookup` (pinned order):**
 
 1. Compute the key with `cache_key(req, PROMPT_VERSION, model)`.
 2. Check the LRU, then `store.get`. A `StoreUnavailable` here is logged and treated as a miss. A hit returns `{**cached, "meta": meta(cached=True, attempts=0, stopReasons=[], outputTokens=[])}`.
-3. `engine_factory()`. `SecretUnavailable` → `WordInfoError(503, "NOT_CONFIGURED", ...)`.
+3. `engine_factory()`, which runs the import, then `from_env`, so a broken SDK is found before SSM is read.
+   - `ImportError` (including a wrong-architecture binary wheel, which surfaces as `ImportError`) → `logger.exception("word-info engine import failed")` → `WordInfoError(503, "NOT_CONFIGURED", "Word lookup is not configured.")`.
+   - `SecretUnavailable` → the same 503, logged without traceback.
+   - In both cases nothing is cached, the next request tries again, and the counter is not touched.
 4. Loop for at most 2 attempts:
    - `store.increment_daily(cap)`: `DailyLimitReached` → `WordInfoError(429, "DAILY_LIMIT", "Daily lookup limit reached.")`; `StoreUnavailable` → `WordInfoError(503, "NOT_CONFIGURED", ...)`.
    - `engine.explain(SYSTEM_PROMPT, build_user_message(req), MODEL_OUTPUT_SCHEMA, ENGINE_TIMEOUT_S)`.
@@ -446,9 +480,10 @@ Log one line per lookup on logger `readmate`: `word_info cached=… attempts=…
   - Busy twice → 429 `BUSY`. Fatal → 502 after 1 call even with time left.
   - **Cap:** `MemoryStore` counter at the cap → 429 `DAILY_LIMIT`, engine never called. Counter raising `StoreUnavailable` → 503, engine never called.
   - `engine_factory` raising `SecretUnavailable` → 503, counter not incremented.
+  - `engine_factory` raising `ImportError` → 503 `NOT_CONFIGURED`, `caplog` has "word-info engine import failed" with `exc_info`, counter not incremented. A factory that fails once and then succeeds → the second lookup answers 200 (no failure caching).
   - `store.get` raising `StoreUnavailable` → still answered (miss); `store.put` raising → still 200.
   - Fixed clock → `latencyMs` deterministic.
-  - `service_from_env({"WORD_INFO_ENGINE": "fake"})` works with no other variables and imports no `anthropic` module (`"readmate.engines.anthropic_word_info" not in sys.modules` after a fresh import in a subprocess, or after `monkeypatch.delitem(sys.modules, ...)`).
+  - `service_from_env({"WORD_INFO_ENGINE": "fake"})` works with no other variables, and its model is `"fake"`. `service_from_env({})` builds without importing anything; its model is `claude-haiku-5-5`, and it does not call SSM until a lookup misses.
 
 - [ ] **Step 2: Run, expect failure.**
 
@@ -465,7 +500,7 @@ Log one line per lookup on logger `readmate`: `word_info cached=… attempts=…
 **Files:**
 - Modify: `backend/src/readmate/handler.py`
 - Create: `contract/word-info.schema.json`, `contract/word-info.example.json` (generated)
-- Test: `backend/tests/test_word_info_handler.py`, `backend/tests/test_word_info_contract.py`
+- Test: `backend/tests/test_word_info_handler.py`, `backend/tests/test_word_info_contract.py`, `backend/tests/test_provider_isolation.py`
 
 **Interfaces:**
 - Consumes: `parse_request`, `BadRequest`, `WordInfoService`, `service_from_env`, `WordInfoError`.
@@ -475,7 +510,7 @@ Log one line per lookup on logger `readmate`: `word_info cached=… attempts=…
   - The `_get_word_info_service()` module-level singleton is built from `os.environ` on first use, and `_reset_word_info_service()` is provided for tests.
   - Error bodies stay `{"error": {"code", "message", **extra}}`.
 
-- [ ] **Step 1: Write failing handler tests.** `make_event(path, method, body, token, content_type, b64)` builds a v2 event with `rawPath`, `requestContext.http.method` and headers. The env fixture sets `PILOT_TOKEN`, `WORD_INFO_ENGINE=fake`, no table, and calls `_reset_word_info_service()`.
+- [ ] **Step 1: Write failing handler tests.** Put `GOLDEN_REQUEST`, `word_info_event(req, **over)`, `ocr_event()` (fake-OCR image event) and `call(event) -> (status, body)` in `tests/helpers.py`, so that `test_provider_isolation.py` reuses them. `make_event(path, method, body, token, content_type, b64)` builds a v2 event with `rawPath`, `requestContext.http.method` and headers. The env fixture sets `PILOT_TOKEN`, `WORD_INFO_ENGINE=fake`, no table, and calls `_reset_word_info_service()`.
   - Valid stellte request → 200, the body validates against `$defs.response`, `meta.cached False`; the same again → `cached True`.
   - Wrong token with an invalid body and wrong content type → 401. Wrong token with `GET` → 401 (the token comes before the method).
   - `GET` with a good token → 405 `METHOD_NOT_ALLOWED`.
@@ -485,6 +520,47 @@ Log one line per lookup on logger `readmate`: `word_info cached=… attempts=…
   - An unexpected exception → 500 `INTERNAL`.
   - `context=None` → works; `remaining_ms` is 15 000.
   - Events **without** `rawPath` and with `rawPath "/ocr"` still run OCR (one test each, image body → 200 with `version` 1). All of `tests/test_handler.py` passes unchanged.
+  - **Import isolation and provider independence (`test_provider_isolation.py`):**
+
+```python
+SRC = Path(__file__).resolve().parents[1] / "src"
+
+def test_importing_the_handler_pulls_in_no_llm_sdk():
+    code = ("import sys, readmate.handler; "
+            "bad = [m for m in ('anthropic', 'pydantic', 'httpx', 'httpx2', "
+            "'readmate.engines.anthropic_word_info') if m in sys.modules]; print(bad)")
+    out = subprocess.run([sys.executable, "-c", code], cwd=SRC, env={**os.environ, "PYTHONPATH": str(SRC)},
+                         capture_output=True, text=True, check=True)
+    assert out.stdout.strip() == "[]"
+
+def test_sdk_import_failure_gives_503_and_ocr_still_works(monkeypatch, caplog):
+    monkeypatch.setenv("WORD_INFO_ENGINE", "anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY_PARAM", "/readmate/anthropic-api-key")
+    monkeypatch.setitem(sys.modules, "anthropic", None)                  # import anthropic → ImportError
+    monkeypatch.delitem(sys.modules, "readmate.engines.anthropic_word_info", raising=False)
+    _reset_word_info_service()
+    status, body = call(word_info_event(GOLDEN_REQUEST))
+    assert status == 503 and body["error"]["code"] == "NOT_CONFIGURED"
+    assert "word-info engine import failed" in caplog.text
+    assert call(ocr_event())[0] == 200                                    # OCR_ENGINE=fake
+
+def test_no_module_outside_engines_imports_anthropic():
+    for path in SRC.joinpath("readmate").rglob("*.py"):
+        if "engines" in path.relative_to(SRC / "readmate").parts:
+            continue
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            names = ([a.name for a in node.names] if isinstance(node, ast.Import)
+                     else [node.module or ""] if isinstance(node, ast.ImportFrom) else [])
+            assert not any(n == "anthropic" or n.startswith("anthropic.") for n in names), path
+
+def test_no_module_imports_a_provider_engine_at_module_level():
+    # engine modules are reached only through word_info_registry.load_engine_class
+    for path in SRC.joinpath("readmate").rglob("*.py"):
+        for node in ast.parse(path.read_text(encoding="utf-8")).body:
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                names = [a.name for a in node.names] + [getattr(node, "module", "") or ""]
+                assert not any(n.endswith("anthropic_word_info") for n in names), path
+```
 
 - [ ] **Step 2: Write the contract schema** `contract/word-info.schema.json` (draft 2020-12, `$id https://readmate.local/word-info.schema.json`, `title WordInfo`) with three definitions:
   - `$defs.request`: `required` = `word`, `wordIndex`, `sentence`, `target`; `additionalProperties` true; strings with `minLength`/`maxLength` from Global Constraints; `words` with `minItems` 1, `maxItems` 120; `kind` enum; `target` const `"en"`; `wordIndex` integer ≥ 0.
@@ -501,6 +577,7 @@ Log one line per lookup on logger `readmate`: `word_info cached=… attempts=…
   - `_word_info(event, context)`: authorize → method from `event.get("requestContext", {}).get("http", {}).get("method", "POST")` → content type `application/json` (split on `;`) → body (base64-decode when `isBase64Encoded`, else UTF-8 encode) → `parse_request` → `service.lookup(req, remaining)` → 200.
   - Map errors in `map_error`: `BadRequest` → 400; `WordInfoError` → its status, code and message plus `extra`.
   - Log the existing `ok` / `error` lines with `route=word-info`.
+  - `handler.py` imports at module level only `readmate.wordinfo.request` and `readmate.wordinfo.service` (plus today's imports). The isolation test proves the closure is SDK-free.
 
 - [ ] **Step 5: Generate the golden.** Run `UPDATE_GOLDEN=1 .venv/Scripts/python -m pytest tests/test_word_info_contract.py -q`, inspect the file (separable `[1, 5]`, `meta.model "fake"`, `latencyMs 0`), then run the full suite without the variable → pass.
 
