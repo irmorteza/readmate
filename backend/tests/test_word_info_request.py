@@ -169,3 +169,28 @@ def test_cache_key_does_not_depend_on_word_field():
     b = parse_request(body(word="stellte"))
     assert a.word != b.word
     assert cache_key(a, "wi-1", "m") == cache_key(b, "wi-1", "m")
+
+
+def _raw(word, w0):
+    tmpl = (
+        '{"word": "WORD", "wordIndex": 0, "target": "en", '
+        '"sentence": {"kind": "fragment", "words": ["W0"]}}'
+    )
+    return tmpl.replace("WORD", word).replace("W0", w0).encode()
+
+
+def test_lone_surrogate_in_words_is_400():
+    raw = _raw(r"\ud800", r"\ud800")
+    with pytest.raises(BadRequest):
+        parse_request(raw)
+
+
+def test_lone_surrogate_in_word_only_is_400():
+    raw = _raw(r"\ud800", r"a\ud800")
+    with pytest.raises(BadRequest):
+        parse_request(raw)
+
+
+def test_deeply_nested_json_is_400():
+    with pytest.raises(BadRequest):
+        parse_request(b"[" * 16000)

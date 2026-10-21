@@ -32,6 +32,10 @@ class WordInfoRequest:
 
 
 def normalize(text: str) -> str:
+    try:
+        text.encode("utf-8")
+    except UnicodeEncodeError:
+        raise BadRequest("text is not valid Unicode") from None
     return _WS.sub(" ", unicodedata.normalize("NFC", text)).strip()
 
 
@@ -40,7 +44,7 @@ def parse_request(body: bytes) -> WordInfoRequest:
         raise BadRequest("request body too large")
     try:
         data = json.loads(body)
-    except (UnicodeDecodeError, ValueError):
+    except (UnicodeDecodeError, ValueError, RecursionError):
         raise BadRequest("body is not valid JSON") from None
     if not isinstance(data, dict):
         raise BadRequest("body must be a JSON object")
