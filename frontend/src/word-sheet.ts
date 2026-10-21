@@ -7,6 +7,8 @@ export interface WordSheetDeps {
   speak(text: string): void;
   comingSoon(label: string): void;
   onClose(): void;
+  /** Optional developer debug panel, mounted as the last child of the sheet body. */
+  debug?: HTMLElement;
 }
 
 export interface WordSheet {
@@ -98,6 +100,7 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
           exampleEnEl,
         ),
       ),
+      ...(deps.debug ? [deps.debug] : []),
     ),
     h(
       "div",

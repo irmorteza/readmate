@@ -218,3 +218,9 @@ describe("dialog behavior", () => {
   });
 });
 
+
+it("mounts an optional debug element as the last child of the sheet body", () => {
+  const debug = document.createElement("details");
+  const sheet = createWordSheet({ speak: vi.fn(), comingSoon: vi.fn(), onClose: vi.fn(), debug });
+  expect(sheet.element.querySelector(".sheet-body")!.lastElementChild).toBe(debug);
+});

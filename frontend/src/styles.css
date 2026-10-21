@@ -1005,6 +1005,79 @@ input[type="password"] {
   font-size: 0.6875rem;
   color: var(--slate-400);
 }
+/* Developer debug panel (inside the word sheet) */
+.debug {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--slate-200);
+}
+.debug summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  list-style: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--slate-600);
+}
+.debug summary::-webkit-details-marker {
+  display: none;
+}
+.debug-chevron {
+  transition: transform 0.15s;
+}
+.debug[open] .debug-chevron {
+  transform: rotate(90deg);
+}
+.debug-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--slate-800);
+  overflow-wrap: anywhere;
+}
+.debug-body p {
+  margin: 0;
+}
+.debug-label {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--slate-600);
+}
+.debug pre,
+.debug-fallback {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: var(--slate-50);
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+}
+.debug mark {
+  background: #fef08a;
+  color: var(--slate-900);
+}
+.debug-kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.75rem;
+  margin: 0;
+}
+.debug-kv dt {
+  color: var(--slate-600);
+}
+.debug-kv dd {
+  margin: 0;
+}
+.debug-copy {
+  min-height: 2.75rem;
+}
 @keyframes drawer-in {
   from {
     opacity: 0;
