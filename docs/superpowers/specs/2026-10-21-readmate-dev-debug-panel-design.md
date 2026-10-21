@@ -1,7 +1,7 @@
 # ReadMate — Sentences in the Frontend and Developer Debug Panel Design Spec
 
 - **Date:** 2026-10-21
-- **Status:** Draft — awaiting owner review
+- **Status:** Approved (2026-10-21)
 - **Path in repo:** `docs/superpowers/specs/2026-10-21-readmate-dev-debug-panel-design.md`
 - **Builds on:** `2026-10-21-readmate-sentence-segmentation-design.md` (§8, §10), `2026-10-18-readmate-ui-v2-design.md` (§11 is authoritative for UI rules)
 - **Supersedes:** segmentation spec §8.2, the sentence "The frontend guard and types are not changed" (see §3 below)
