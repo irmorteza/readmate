@@ -54,9 +54,9 @@ normalize → filter_noise → merge_hyphenated → segment_sentences
 
 A word *ends a sentence by punctuation* when its last box `raw`, after removing trailing closing characters, ends in terminal punctuation and none of the exceptions apply.
 
-**Closing characters** (removed from the right first): `“ ” " ' ’ ‘ » « ) ]` — both `»` and `«`, since German uses `»…«` and Swiss uses `«…»`.
+**Closing characters** (removed from the right first): `“ ” " ' ’ ‘ » « › ‹ ) ]` — both `»` and `«`, since German uses `»…«` and Swiss uses `«…»`.
 
-**Opening characters** (removed from the left of a token when checking abbreviations, and kept in `text`): `„ ‚ » « “ ( [` plus `" '`.
+**Opening characters** (removed from the left of a token when checking abbreviations, and kept in `text`): `„ ‚ » « › ‹ “ ( [` plus `" '`.
 
 **Rules, checked in this order:**
 
@@ -100,10 +100,14 @@ All measurements use kept boxes (after `filter_noise`), not the engine's line bo
 
 There is a boundary after line L when L's last box `raw` does **not** end in `-` and either:
 
-- (a) the gap to the next line in reading order is > `GAP_IN_UNITS × u`, or
+- (a) the gap to the next line in reading order is > the **gap limit** `max(GAP_IN_UNITS × u, GAP_TO_MEDIAN × median gap)`, or
 - (b) L is short **and** the next line is indented.
 
 A short line alone is not a boundary. The last line of the page always closes the current entry.
+
+**Gap limit.** The median gap is the median of the positive gaps between consecutive lines of L's column. It makes widely spaced text (large print, 1.5 line spacing) work: there the ordinary gap is already above `GAP_IN_UNITS × u`, and only a gap clearly larger than the ordinary one is a paragraph gap. With fewer than `MIN_GAPS_FOR_MEDIAN` (3) positive gaps in the column the median term is not used and the limit is `GAP_IN_UNITS × u` alone, because a lone gap would otherwise define itself as the normal one.
+
+**Same row.** When the next line overlaps L vertically by more than half the smaller of the two heights, both are blocks of one printed row (the engine split a line). There is then no boundary after L, and the next line is never treated as indented.
 
 ### 5.3 Constants (calibrated on the book fixture)
 
@@ -112,6 +116,8 @@ A short line alone is not a boundary. The last line of the page always closes th
 | `GAP_IN_UNITS` | 1.0 | gap ≤ 0.53 u | 5.7 u, 3.4 u |
 | `SHORT_LINE_RATIO` | 0.85 | width ≥ 0.97 | ≈ 0.16 – 0.52 |
 | `INDENT_IN_UNITS` | 0.7 | ≤ 0.32 u | 1.43 u (line 18) |
+| `GAP_TO_MEDIAN` | 2.0 | ordinary gaps are about the median | (boundary gaps are well above 2 × median) |
+| `MIN_GAPS_FOR_MEDIAN` | 3 | | |
 | `WINDOW` | 3 | | |
 
 **These thresholds are calibrated on a single page and may need re-tuning** when more fixtures (newspaper, other books, other cameras) are captured. They are named module constants so they can be adjusted with their tests.
@@ -196,6 +202,11 @@ Text that is not sentences must never break OCR.
 - A listed abbreviation, single letter or 1–2 digit ordinal at a real sentence end followed by an uppercase word does not end the sentence (`Äpfel, Birnen usw. Dann …`, `Er wurde 3. Dann …`); the two sentences merge.
 - An unlisted abbreviation followed by an uppercase word (`Abs. Drei`) ends the sentence wrongly. Followed by a lowercase word it is handled by the cancel rule.
 - Direct speech ending in `?` / `!` followed by an uppercase word (`„Kommst du?“ Er lachte.`) is two entries; this is correct German segmentation, not a bug.
+- Dense dialog made of one-line paragraphs: most neighbours inside the `WINDOW` are themselves indented, so the local left edge moves to the indent position and rule (b) no longer sees the next line as indented. Two speakers' lines can merge, in particular when an end mark was lost (§9, standalone punctuation).
+- Footnote markers after the end mark (`Haus.¹`), times (`15.30.`) and thousands (`1.000.`) do not end a sentence; the sentence merges with the next one.
+- A page number at the top of the page with a gap of at most one gap limit to the first line, where that line is not indented, merges into the first sentence and the `incomplete` label is lost.
+- A centered heading followed by a flush-left first paragraph with a small gap merges with that paragraph (`Kapitel Zwei Es war …`).
+- A lowercase page header (roman numerals such as `xii`) is labelled `incomplete`, because it is the first lowercase entry; a real continuation after it is then labelled `sentence`.
 - Thresholds come from one page (§5.3).
 - Multi-column reading order is assumed, not verified on real data (§7).
 
