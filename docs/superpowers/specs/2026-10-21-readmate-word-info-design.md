@@ -435,6 +435,7 @@ CSS, class-only, with no pseudo-elements; the existing guard is extended:
 - `.box.hl-collocation { border-color: var(--emerald-700); border-style: dotted; }`
 - Outline does not touch the dotted underline of `hl-sentence` or the box-shadow of `.selected`.
 - New tokens `--violet-600 #7c3aed` and `--emerald-700 #047857` (≥ 3:1 non-text contrast on white). They are declared after `hl-sentence`, so on a box carrying both the part style wins.
+- **Amendment 2026-10-22:** a word in both groups (the tapped word always is) keeps the verb-part look: `.word.hl-verb-part.hl-collocation` and `.box.hl-verb-part.hl-collocation` repeat the violet rules and are declared after the four single-style rules; other words of the expression keep the collocation style.
 
 ### 10.6 Debug panel
 

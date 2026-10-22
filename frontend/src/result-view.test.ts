@@ -56,7 +56,12 @@ const word = (id: number) => document.querySelector<HTMLElement>(`.word[data-wor
 const sheet = () => document.querySelector<HTMLElement>(".sheet")!;
 const text = (selector: string) => sheet().querySelector(selector)?.textContent;
 
-afterEach(() => document.body.replaceChildren());
+afterEach(() => {
+  document.body.replaceChildren();
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+  setClipboard(undefined);
+});
 
 describe("tabs", () => {
   it("offers Smart Image and Clean Text, with Clean Text active first", () => {
@@ -722,8 +727,5 @@ describe("part highlights", () => {
       expect(content).not.toContain("tok-SECRET-123");
       expect(content).not.toContain("X-Pilot-Token");
     }
-    vi.unstubAllGlobals();
-    vi.unstubAllEnvs();
-    setClipboard(undefined);
   });
 });

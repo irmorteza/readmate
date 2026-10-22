@@ -131,8 +131,11 @@ export function createApiTranslationService(deps: {
     source: "api",
     async lookup(request) {
       const token = deps.getToken();
-      // An OCR-merged tapped word is never clipped by the builder, so it is refused here.
-      if (!token || request.word.length > MAX_WORD_CHARS) throw new WordLookupError("unavailable");
+      // The builder never clips the tapped word, so a request the server would reject is refused here.
+      // The piece actually sent keeps its punctuation and can be longer than the word.
+      const sent = request.sentence.words[request.wordIndex] ?? "";
+      const tooLong = Math.max(request.word.length, sent.length) > MAX_WORD_CHARS;
+      if (!token || tooLong) throw new WordLookupError("unavailable");
       return toWordInfo(await post(request, token), request);
     },
   };

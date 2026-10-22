@@ -126,6 +126,26 @@ describe("API translation service", () => {
   });
 });
 
+describe("API translation service length check", () => {
+  it("refuses a request whose sent piece is over 64 characters even when the word itself fits", async () => {
+    const post = vi.fn();
+    const word = "x".repeat(MAX_WORD_CHARS);
+    const request: WordInfoRequest = { word, wordIndex: 0, sentence: { kind: "sentence", words: [`${word},`] }, target: "en" };
+    const err = await createApiTranslationService({ getToken: () => "tok", post }).lookup(request).catch((e) => e);
+    expect(err).toBeInstanceOf(WordLookupError);
+    expect(err.kind).toBe("unavailable");
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("sends a 64-character piece", async () => {
+    const post = vi.fn().mockResolvedValue({ ...golden, word: "x" });
+    const word = "x".repeat(MAX_WORD_CHARS);
+    const request: WordInfoRequest = { word, wordIndex: 0, sentence: { kind: "sentence", words: [word, "b"] }, target: "en" };
+    await createApiTranslationService({ getToken: () => "tok", post }).lookup(request);
+    expect(post).toHaveBeenCalled();
+  });
+});
+
 describe("createTranslationService", () => {
   it("returns the API service when VITE_API_URL is set", () => {
     vi.stubEnv("VITE_API_URL", "http://api.test");

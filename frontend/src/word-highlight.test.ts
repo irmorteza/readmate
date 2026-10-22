@@ -93,6 +93,24 @@ describe("part highlight CSS", () => {
     }
   });
 
+  it("a word in both groups looks exactly like a verb part", () => {
+    const word = declarations(".word.hl-verb-part.hl-collocation");
+    expect(word).toContain("outline: 0.125rem solid var(--violet-600)");
+    expect(word).toContain("outline-offset: 0.0625rem");
+    const box = declarations(".box.hl-verb-part.hl-collocation");
+    expect(box).toContain("border-color: var(--violet-600)");
+    expect(box).toContain("border-style: solid");
+  });
+
+  it("declares the combined rules after the single-style rules, without pseudo-elements", () => {
+    for (const kind of ["word", "box"]) {
+      const combined = at(`.${kind}.hl-verb-part.hl-collocation`);
+      expect(combined, kind).toBeGreaterThan(at(`.${kind}.hl-verb-part`));
+      expect(combined, kind).toBeGreaterThan(at(`.${kind}.hl-collocation`));
+    }
+    expect(plain).not.toMatch(/\.hl-verb-part\.hl-collocation[^{]*:{1,2}(before|after)/);
+  });
+
   it("declares the box rules after .box.hl-sentence so the part style wins", () => {
     const sentence = at(".box.hl-sentence");
     expect(sentence).toBeGreaterThan(-1);

@@ -424,6 +424,15 @@ input[type="password"] {
   border-color: var(--emerald-700);
   border-style: dotted;
 }
+/* A word in both groups (the tapped word always is) keeps the verb-part look. */
+.word.hl-verb-part.hl-collocation {
+  outline: 0.125rem solid var(--violet-600);
+  outline-offset: 0.0625rem;
+}
+.box.hl-verb-part.hl-collocation {
+  border-color: var(--violet-600);
+  border-style: solid;
+}
 
 /* Word sheet (UI v2): anchored inside the app container, never fixed to the window */
 .sheet-backdrop {
