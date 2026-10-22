@@ -164,7 +164,7 @@ EXPECTED = [
 ]
 ```
 
-    plus: concatenated `wordIds` == `[w["id"] for w in words]`; ids are `0..14`; entry 11 `text == "»Sind Sie die Mutter von"`.
+    plus: concatenated `wordIds` == `[w["id"] for w in words]`; ids are `0..14`; entry 11 `text == "[book text omitted for copyright, 2026-10-22]"`.
   - `test_kommst_du_fragte_er_is_one_entry` — `„Kommst du?“ fragte er. Dann ging er.` → 2 entries.
   - `test_unlisted_abbreviation_before_lowercase` — `Siehe Abs. drei hier. Ende.` → 2 entries.
   - `test_usw_before_lowercase` — `Äpfel usw. und Birnen. Ende.` → 2 entries.

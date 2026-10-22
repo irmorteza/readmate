@@ -147,7 +147,7 @@ This is tested with synthetic two-column data only. A real newspaper fixture wou
 
 ```json
 "sentences": [
-  { "id": 0, "kind": "sentence", "wordIds": [0, 1, 2], "text": "Als Linn …" }
+  { "id": 0, "kind": "sentence", "wordIds": [0, 1, 2], "text": "<the entry's words, joined by single spaces>" }
 ]
 ```
 
@@ -158,23 +158,23 @@ This is tested with synthetic two-column data only. A real newspaper fixture wou
 
 **Expected result on the book fixture** (pinned in the test by first word id, last word id and kind):
 
-| # | first | last | kind | starts with |
+| # | first | last | kind | description |
 |---|---|---|---|---|
-| 0 | 0 | 15 | sentence | Als Linn anderthalb |
-| 1 | 16 | 35 | sentence | Sie zappelte |
-| 2 | 36 | 61 | sentence | So viele Male |
-| 3 | 62 | 69 | sentence | Jeden Moment |
-| 4 | 71 | 79 | sentence | Ich sah |
-| 5 | 81 | 95 | sentence | Bei dem Gedanken |
-| 6 | 96 | 108 | sentence | Mit dem Kind |
-| 7 | 109 | 119 | sentence | Es war Ende Mai |
-| 8 | 120 | 137 | sentence | Sie hielt |
-| 9 | 138 | 145 | sentence | Vor den Augen |
-| 10 | 146 | 154 | sentence | Ich bekam |
+| 0 | 0 | 15 | sentence | first sentence on the page |
+| 1 | 16 | 35 | sentence | second sentence |
+| 2 | 36 | 61 | sentence | third sentence, contains the first hyphen-merged pair |
+| 3 | 62 | 69 | sentence | fourth sentence, ends in the second hyphen-merged word |
+| 4 | 71 | 79 | sentence | fifth sentence, ends in the third hyphen-merged word |
+| 5 | 81 | 95 | sentence | sixth sentence, starts after the third merged word |
+| 6 | 96 | 108 | sentence | seventh sentence, ends in the fourth hyphen-merged word |
+| 7 | 109 | 119 | sentence | eighth sentence |
+| 8 | 120 | 137 | sentence | ninth sentence, 18 words across three lines |
+| 9 | 138 | 145 | sentence | tenth sentence |
+| 10 | 146 | 154 | sentence | eleventh sentence |
 | 11 | 155 | 159 | fragment | opening-quote fragment, five words, no closing quote |
 | 12 | 161 | 171 | sentence | first sentence of the next paragraph |
-| 13 | 172 | 190 | sentence | Die Luke |
-| 14 | 191 | 191 | fragment | 7 |
+| 13 | 172 | 190 | sentence | last sentence of the text |
+| 14 | 191 | 191 | fragment | page number |
 
 The lowercase cancel rule does not change this result. Missing word ids are 43, 70, 80 and 107 (second halves of hyphen-merged words, which keep the first half's id) and 160 (a dropped box, below).
 
