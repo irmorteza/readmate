@@ -110,7 +110,7 @@ def cache_key(
             language.mode,
             req.kind,
             str(req.word_index),
-            "".join(req.words),
+            "\x1f".join(req.words),
         ]
     )
     return hashlib.sha256(material.encode("utf-8")).hexdigest()

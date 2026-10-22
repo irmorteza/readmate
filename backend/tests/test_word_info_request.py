@@ -222,3 +222,17 @@ def test_adding_a_language_changes_no_existing_key():
     for code in CODES:
         req = parse_request(body(target=code))
         assert cache_key(req, "wi-3", "m", table3) == cache_key(req, "wi-3", "m")
+
+
+def test_cache_key_separates_words_with_unit_separator():
+    ab_c = parse_request(body(sentence={"words": ["ab", "c"]}, word="ab", wordIndex=0))
+    a_bc = parse_request(body(sentence={"words": ["a", "bc"]}, word="a", wordIndex=0))
+    assert cache_key(ab_c, "wi-3", "m") != cache_key(a_bc, "wi-3", "m")
+
+
+def test_cache_key_for_a_fixed_request_is_pinned():
+    # sha256 of "wi-3|claude-haiku-5-5|fa|Persian|translate|sentence|1|" + words joined with U+001F
+    req = parse_request(body(target="fa"))
+    assert cache_key(req, "wi-3", "claude-haiku-5-5") == (
+        "961bcec8fce3896bc0cbb8d3d8a71ae2baad6b7646c5cd9145a8f308e3899896"
+    )
