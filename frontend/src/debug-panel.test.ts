@@ -40,7 +40,7 @@ it("shows word, sentence with the tapped word marked, lines, request with contex
   expect(section("sentence").textContent).toContain("sentence");
   expect(section("lines").textContent).toContain("Das Vorstel- war");
   expect(section("request").querySelector("pre")!.textContent).toBe(
-    JSON.stringify({ word: "war", context: "Vorstellungskraft war" }, null, 2));
+    JSON.stringify({ word: "war", wordIndex: 1, sentence: { kind: "sentence", words: ["Vorstellungskraft", "war"] }, target: "en" }, null, 2));
   expect(section("request").querySelector(".debug-context-length")!.textContent).toBe("Context: 21 characters (sentence)");
   expect(section("result").textContent).toContain("stub");
   expect(section("result").textContent).toContain("was");

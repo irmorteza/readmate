@@ -17,7 +17,7 @@ const info = (word: string): WordInfo => ({
 });
 
 function service(lookup?: TranslationService["lookup"]): TranslationService & { lookup: ReturnType<typeof vi.fn> } {
-  return { lookup: vi.fn(lookup ?? (async (word: string) => info(word))) };
+  return { lookup: vi.fn(lookup ?? (async (request) => info(request.word))) };
 }
 
 function fakeDevMode(initial = false) {
@@ -190,21 +190,23 @@ describe("translation sheet", () => {
     await vi.waitFor(() => expect(text(".translation")).toBe("Translated war"));
   });
 
-  it("passes the real text of the lines the word is on as context", async () => {
+  it("sends the built request", async () => {
     const { translation } = mount();
     word(2).click();
     await vi.waitFor(() => expect(translation.lookup).toHaveBeenCalled());
-    expect(translation.lookup).toHaveBeenCalledWith(
-      "Vorstellungskraft",
-      "Das Vorstel- war lungskraft groß",
-    );
+    expect(translation.lookup).toHaveBeenCalledWith({
+      word: "Vorstellungskraft",
+      wordIndex: 0,
+      sentence: { kind: "fragment", words: ["Vorstellungskraft", "war"] },
+      target: "en",
+    });
   });
 
   it("ignores a slow lookup that finishes after another word was tapped", async () => {
     const pending = new Map<string, (v: WordInfo) => void>();
     mount(
       gappedResult,
-      service((w) => new Promise<WordInfo>((r) => pending.set(w, r))),
+      service((req) => new Promise<WordInfo>((r) => pending.set(req.word, r))),
     );
     word(2).click();
     word(9).click();
@@ -381,16 +383,26 @@ describe("sentences and developer mode", () => {
   const panel = () => document.querySelector<HTMLDetailsElement>("details.debug")!;
   const flush = () => new Promise((r) => setTimeout(r, 0));
 
-  it("looks up with the sentence text as context", () => {
+  it("looks up with the sentence pieces", () => {
     const { translation } = mount(sentenceResult);
     word(9).click();
-    expect(translation.lookup).toHaveBeenCalledWith("war", "Vorstellungskraft war");
+    expect(translation.lookup).toHaveBeenCalledWith({
+      word: "war",
+      wordIndex: 1,
+      sentence: { kind: "sentence", words: ["Vorstellungskraft", "war"] },
+      target: "en",
+    });
   });
 
-  it("looks up with the joined lines when there are no sentences", () => {
+  it("looks up with the words of the lines when there are no sentences", () => {
     const { translation } = mount(gappedResult);
     word(2).click();
-    expect(translation.lookup).toHaveBeenCalledWith("Vorstellungskraft", "Das Vorstel- war lungskraft groß");
+    expect(translation.lookup).toHaveBeenCalledWith({
+      word: "Vorstellungskraft",
+      wordIndex: 0,
+      sentence: { kind: "fragment", words: ["Vorstellungskraft", "war"] },
+      target: "en",
+    });
   });
 
   it("with developer mode off: no outline, debug panel hidden and empty", () => {
@@ -415,7 +427,12 @@ describe("sentences and developer mode", () => {
     word(9).click();
     word(2).click();
     expect(word(2).classList.contains("selected")).toBe(true);
-    expect(translation.lookup).toHaveBeenLastCalledWith("Vorstellungskraft", "Vorstellungskraft war");
+    expect(translation.lookup).toHaveBeenLastCalledWith({
+      word: "Vorstellungskraft",
+      wordIndex: 0,
+      sentence: { kind: "sentence", words: ["Vorstellungskraft", "war"] },
+      target: "en",
+    });
   });
 
   it("a tap on a word without a sentence clears the outline", () => {

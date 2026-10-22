@@ -1,10 +1,10 @@
 import { isEmptyResult, NO_TEXT_MESSAGE } from "./app";
 import type { OcrBox, OcrResult, OcrWord } from "./contract";
 import { createDebugPanel } from "./debug-panel";
-import { buildDebugSnapshot, type LookupOutcome } from "./debug-snapshot";
+import { buildDebugSnapshot, okOutcome, type LookupOutcome } from "./debug-snapshot";
 import { button, h } from "./dom";
 import { icon } from "./icons";
-import { buildLookupRequest } from "./lookup-request";
+import { buildLookup } from "./lookup-request";
 import { renderOverlay, type ZoomLevel } from "./overlay";
 import { createSelection } from "./selection";
 import type { TranslationService } from "./translation";
@@ -77,9 +77,9 @@ export function createResultView(state: ResultViewState, deps: ResultViewDeps): 
   const source = deps.translation.source ?? "unknown";
   const selection = createSelection(result, (event) => {
     const mine = ++lookupId;
-    const { request, contextSource } = buildLookupRequest(event);
+    const lookup = buildLookup(event, result);
     const snapshot = (outcome: LookupOutcome) =>
-      buildDebugSnapshot({ build: deps.build, result, event, request, contextSource, source, outcome });
+      buildDebugSnapshot({ build: deps.build, result, event, lookup, source, outcome });
     // Read once per tap: turning developer mode on mid-lookup shows nothing until the next tap.
     const dev = deps.devMode.get();
     const showDebug = (outcome: LookupOutcome) => {
@@ -95,11 +95,11 @@ export function createResultView(state: ResultViewState, deps: ResultViewDeps): 
       highlighter.clear("sentence");
       panel.clear();
     }
-    deps.translation.lookup(request.word, request.context).then(
+    deps.translation.lookup(lookup.request).then(
       (info) => {
         if (mine !== lookupId) return;
         sheet.show(info);
-        showDebug({ status: "ok", response: { ...info } });
+        showDebug(okOutcome(info));
       },
       (e) => {
         if (mine !== lookupId) return;

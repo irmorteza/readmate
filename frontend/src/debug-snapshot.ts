@@ -1,6 +1,8 @@
 import { sentencesIgnored, type OcrResult } from "./contract";
-import type { ContextSource, LookupRequest } from "./lookup-request";
+import type { BuiltLookup, ContextSource } from "./lookup-request";
 import type { SelectedSentence, WordSelectedEvent } from "./selection";
+import type { WordInfo } from "./translation";
+import type { WordInfoRequest } from "./word-info-contract";
 
 export type SentenceStatus = "ok" | "absent" | "ignored" | "not-found";
 
@@ -9,9 +11,15 @@ export type LookupOutcome =
   | { status: "ok"; response: Record<string, unknown>; meta?: Record<string, unknown> | null }
   | { status: "error"; error: string };
 
+/** An ok outcome from a lookup result: `meta` moves out of the response into its own field. */
+export function okOutcome(info: WordInfo): LookupOutcome {
+  const { meta, ...response } = info;
+  return { status: "ok", response, meta: meta ?? null };
+}
+
 /** Exactly what the debug panel's Copy JSON copies. Built from plain data only: no token, no headers. */
 export interface DebugSnapshot {
-  format: "readmate-debug/1";
+  format: "readmate-debug/2";
   build: string;
   engine: string;
   word: { id: number; text: string };
@@ -19,9 +27,10 @@ export interface DebugSnapshot {
   sentence: SelectedSentence | null;
   lineTexts: string[];
   lookup: {
-    request: LookupRequest;
+    request: WordInfoRequest;
     contextSource: ContextSource;
     contextLength: number;
+    windowed: boolean;
     status: "pending" | "ok" | "error";
     source: string;
     response: Record<string, unknown> | null;
@@ -41,14 +50,13 @@ export function buildDebugSnapshot(input: {
   build: string;
   result: OcrResult;
   event: WordSelectedEvent;
-  request: LookupRequest;
-  contextSource: ContextSource;
+  lookup: BuiltLookup;
   source: string;
   outcome: LookupOutcome;
 }): DebugSnapshot {
-  const { result, event, request, outcome } = input;
+  const { result, event, lookup, outcome } = input;
   return {
-    format: "readmate-debug/1",
+    format: "readmate-debug/2",
     build: input.build,
     engine: result.engine,
     word: { id: event.word.id, text: event.word.text },
@@ -56,9 +64,10 @@ export function buildDebugSnapshot(input: {
     sentence: event.sentence ?? null,
     lineTexts: event.lineTexts,
     lookup: {
-      request,
-      contextSource: input.contextSource,
-      contextLength: request.context.length,
+      request: lookup.request,
+      contextSource: lookup.contextSource,
+      contextLength: lookup.context.length,
+      windowed: lookup.windowed,
       status: outcome.status,
       source: input.source,
       response: outcome.status === "ok" ? outcome.response : null,

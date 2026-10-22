@@ -18,7 +18,7 @@ import { createTranslationService } from "./translation";
 import { applyUiScale, describeViewport } from "./viewport";
 
 const root = document.getElementById("app")!;
-const translation = createTranslationService();
+const translation = createTranslationService({ getToken });
 const toaster = createToaster(); // one toaster for the whole session; it survives screen changes
 
 const controller = createController({
