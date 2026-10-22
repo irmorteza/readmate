@@ -1,0 +1,17 @@
+{
+  "default": "en",
+  "languages": [
+    { "code": "en",      "english": "English",               "native": "English",           "dir": "ltr", "mode": "translate" },
+    { "code": "de",      "english": "Simple German",         "native": "Einfaches Deutsch", "dir": "ltr", "mode": "explain" },
+    { "code": "fa",      "english": "Persian",               "native": "فارسی",             "dir": "rtl", "mode": "translate" },
+    { "code": "ar",      "english": "Arabic",                "native": "العربية",           "dir": "rtl", "mode": "translate" },
+    { "code": "tr",      "english": "Turkish",               "native": "Türkçe",            "dir": "ltr", "mode": "translate" },
+    { "code": "uk",      "english": "Ukrainian",             "native": "Українська",        "dir": "ltr", "mode": "translate" },
+    { "code": "ru",      "english": "Russian",               "native": "Русский",           "dir": "ltr", "mode": "translate" },
+    { "code": "pl",      "english": "Polish",                "native": "Polski",            "dir": "ltr", "mode": "translate" },
+    { "code": "es",      "english": "Spanish",               "native": "Español",           "dir": "ltr", "mode": "translate" },
+    { "code": "fr",      "english": "French",                "native": "Français",          "dir": "ltr", "mode": "translate" },
+    { "code": "it",      "english": "Italian",               "native": "Italiano",          "dir": "ltr", "mode": "translate" },
+    { "code": "zh-Hans", "english": "Chinese (Simplified)",  "native": "简体中文",           "dir": "ltr", "mode": "translate" }
+  ]
+}

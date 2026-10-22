@@ -79,6 +79,6 @@ def test_schema_response_required_matches_validator_keys():
 
 
 def test_request_schema_rejects_bad_target():
-    bad = {**GOLDEN_REQUEST, "target": "fr"}
+    bad = {**GOLDEN_REQUEST, "target": "xx"}
     with pytest.raises(jsonschema.ValidationError):
         validate(bad, "request")

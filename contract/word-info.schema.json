@@ -24,7 +24,7 @@
             }
           }
         },
-        "target": { "const": "en" }
+        "target": { "enum": ["en", "de", "fa", "ar", "tr", "uk", "ru", "pl", "es", "fr", "it", "zh-Hans"] }
       }
     },
     "response": {
