@@ -167,14 +167,22 @@ Invoke-RestMethod -Method Post -Uri "${url}v1/word-info" -ContentType applicatio
 # run it twice: the second answer has meta.cached = true
 ```
 
-**Expected change set (step 2c): exactly two rows.**
+**Expected change set (step 2c): two primary rows.**
 
 | Action | Resource | Replacement |
 |---|---|---|
 | `Add` | `WordInfoTable` (`AWS::DynamoDB::Table`) | — (empty) |
 | `Modify` | `OcrExecutionRole` (`AWS::IAM::Role`) | `False` |
 
-**Do not execute if anything else appears.** That includes `GitHubOidcProvider` or `DeployRole` in any form, any `Remove`, or any `Replacement` of `True` or `Conditional`. It also includes any difference in step 2d. Delete the change set and investigate instead. (The new `WordInfoTableName` output is not a resource change and does not show in 2c.)
+CloudFormation may also list a derived `DeployRole` row, because the deploy role's policy references `OcrExecutionRole`. That row is acceptable ONLY if all of these hold: Action is `Modify`, Replacement is `False`, and its Details show the change is caused only by the reference to `OcrExecutionRole` (every detail has ChangeSource `ResourceAttribute`, Evaluation `Dynamic` and CausingEntity `OcrExecutionRole.Arn`), with NO static property change (no detail with Evaluation `Static`, no `DirectModification`). Print the details of both rows with this query (run it after `$cs` is set):
+
+```powershell
+aws cloudformation describe-change-set --region eu-central-1 --change-set-name $cs --query "Changes[?ResourceChange.LogicalResourceId=='DeployRole' || ResourceChange.LogicalResourceId=='OcrExecutionRole'].ResourceChange.{Resource:LogicalResourceId,Action:Action,Replacement:Replacement,Details:Details[].{Name:Target.Name,Attribute:Target.Attribute,Eval:Evaluation,Source:ChangeSource,Cause:CausingEntity}}" --output json
+```
+
+**Do not execute if anything else appears.** That includes any other involvement of `GitHubOidcProvider` or `DeployRole` (beyond the derived row described above), any `Remove`, or any `Replacement` of `True` or `Conditional`. It also includes any difference in step 2d. Delete the change set and investigate instead. (The new `WordInfoTableName` output is not a resource change and does not show in 2c.)
+
+**Timing.** The inline policy on `OcrExecutionRole` is renamed (`TextractDetectDocumentText` to `OcrExecutionPermissions`), which may briefly drop the role's Textract permission while the update applies. Execute the change set when no scan or OCR request is running.
 
 **Rotation.** Run step 1 again with `--overwrite` added to `put-parameter`. The Lambda keeps the key in memory per container, so the next cold start picks the new value up; to force that, update any function configuration (for example a description or an environment variable) or just wait.
 
