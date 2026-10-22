@@ -188,14 +188,14 @@ No change to the handler, service, store, secrets, infrastructure, the OCR route
 ### 7.2 Contract guard and mapping
 
 - `isWordInfoResponse` accepts an optional `exampleTranslation`. If present it must be a string; old backends omit it.
-- `WordInfo` gains `target: string` and `exampleTranslation: string`. `toWordInfo` sets `exampleTranslation = response.exampleTranslation ?? response.exampleEn`, and `target = request.target`. When it falls back to `exampleEn`, the target used for rendering that line is `en`, so the `lang` attribute stays true.
-- The stub service returns `target: "en"`.
+- `WordInfo` gains optional `target` and `exampleTranslation`. `toWordInfo` sets `target = request.target`, and sets `exampleTranslation` only when the response has it. The sheet shows `exampleTranslation ?? exampleEn`; when it falls back to `exampleEn`, that line gets `lang="en"`, so the `lang` attribute stays true.
+- The stub service is unchanged; the sheet treats a missing `target` as `en`.
 
 ### 7.3 Word sheet
 
 - **Picker:** a row at the top of the sheet, below the handle and above the title: the label "Translate to" and a `<select aria-label="Translation language">`. Its options show `native`, and each has `lang` and `dir` from the data. It meets the existing touch-target rule (at least 44 px high). It is set from the store whenever the sheet opens.
 - **Change:** `onTargetChange(code)` saves the code and asks the result view to repeat the lookup for the current word (§7.4). The sheet shows the loading state, and focus stays on the select.
-- **Labels:** the translation card label is `"<english> translation"` for `translate` (so English shows "English translation", the same text as today) and `"<english> explanation"` for `explain` ("Simple German explanation").
+- **Labels:** the translation card label is `"<english> Translation"` for `translate` (so English shows "English Translation", the same text as today) and `"<english> Explanation"` for `explain` ("Simple German Explanation"). The label CSS renders it in capitals.
 - **Direction and language** (attributes only, no layout change):
   - `lang` and `dir` of the target on `translation`, `senseInContext`, `expression.meaning` and the example translation line;
   - `lang="de" dir="ltr"` on the title, `exampleDe`, the lemma and noun lines, `separableVerb.infinitive`, the parts lists and `expression.text`;
