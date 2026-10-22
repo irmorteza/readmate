@@ -8,6 +8,7 @@ A PWA that OCRs a photographed German page (Amazon Textract) and lets you tap an
 - Frontend tests: `cd frontend && npx vitest run` and `npx tsc --noEmit`
 - Run everything locally: `.\run.cmd` (real Textract) or `.\run.cmd -Engine fake`; the app needs the token printed by the script (default `dev`)
 - Guard tests in `backend/tests/test_workflow.py` and `test_github_oidc_template.py` pin the pipeline's security properties; change them only deliberately.
+- Translation languages: edit `contract/languages.json`, then run `backend/.venv/Scripts/python scripts/sync_languages.py` (writes the backend and frontend copies and the schema enum) and add a probe case.
 
 ## Deployment
 

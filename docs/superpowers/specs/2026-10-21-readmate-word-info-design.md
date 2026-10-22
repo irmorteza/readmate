@@ -28,7 +28,7 @@ The answer also returns the word positions of those parts, and the frontend high
 ## 2. Scope
 
 - **In:** new route, word-info engines (Anthropic + fake), cache and counter, `contract/word-info.schema.json` + golden example, bootstrap-stack table and permissions with guard tests, app-template environment, dev server and `run.ps1`, docs (`deploy.md`, `CLAUDE.md`), frontend service, sheet, highlights, debug panel.
-- **Out:** compound-word splitting, target languages other than `en`, full-sentence translation (the existing `sentenceTranslation` card stays unused), flashcards, streaming, Bedrock, prompt caching (the prompt is below the minimum cacheable length).
+- **Out:** compound-word splitting, target languages other than `en`, full-sentence translation (the existing `sentenceTranslation` card stays unused), flashcards, streaming, Bedrock, prompt caching (the prompt is below the minimum cacheable length). **Amendment 2026-10-22:** target languages other than `en` are now in scope; see `2026-10-22-readmate-translation-languages-design.md`.
 
 ## 3. Architecture
 
@@ -86,7 +86,7 @@ Checked in this order; every failure is `400 BAD_REQUEST` unless noted:
 
 1. **Token** (`X-Pilot-Token`, constant-time compare): `401 UNAUTHORIZED`. This is checked before the body is read.
 2. Content-Type is `application/json`. The body (plain or base64, whichever the Function URL delivers) is at most 16 KB and parses as a JSON object. Unknown keys are ignored, so the request can grow additively.
-3. `target` is `"en"`.
+3. `target` is `"en"`. **Amendment 2026-10-22:** `target` is any code in `contract/languages.json`.
 4. `sentence.kind` is `"sentence" | "fragment" | "incomplete"`.
 5. `sentence.words` holds 1–**120** strings. Each is 1–64 characters after NFC normalization and trimming, and **the words joined with single spaces are at most 600 characters**.
 6. `wordIndex` is an integer with `0 ≤ wordIndex < len(words)`.
@@ -207,6 +207,8 @@ The **user message** is a fixed template with the data inside delimiters:
 
 **Amendment 2026-10-22 (`wi-2`):** the user message also carries the tapped word's text in `<tapped_word>`, escaped like the words (`<` and `>` replaced), and the system prompt says to describe exactly the word at that index, even when it belongs to a predicate with a verb. Reason: for "Das Wasser ist klar." with the tapped word "klar." the model answered with the lemma "sein".
 
+**Amendment 2026-10-22 (`wi-3`):** target language in the user message, `exampleTranslation`, and the two backlog fixes; see the translation-languages spec §5.
+
 A guard test pins `sha256(system prompt + json(MODEL_OUTPUT_SCHEMA) + user template)` next to `PROMPT_VERSION`. Changing any of them without bumping the version fails the test, so stale cache entries can never be served for a new prompt.
 
 ### 5.6 Timeouts, retry, deadline
@@ -223,6 +225,8 @@ A guard test pins `sha256(system prompt + json(MODEL_OUTPUT_SCHEMA) + user templ
 normalized words = NFC → strip → collapse inner whitespace, joined with U+001F
 key = sha256( PROMPT_VERSION | model | target | kind | wordIndex | normalized words ).hexdigest()
 ```
+
+**Amendment 2026-10-22:** the key material adds `target_english | target_mode` after `target`.
 
 ### 6.2 Storage
 
