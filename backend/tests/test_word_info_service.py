@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -391,3 +392,33 @@ def test_cap_zero_is_429_and_never_calls_engine(kind):
     assert engine.calls == []
     if stubber:
         stubber.assert_no_pending_responses()
+
+
+def test_malformed_response_engine_error_is_502_not_500():
+    svc, engine, _ = make([EngineError("fatal", "MalformedResponse:")])
+    err = fail(svc)
+    assert (err.status, err.code) == (502, "LOOKUP_FAILED")
+    assert len(engine.calls) == 1
+
+
+def test_cache_hit_returns_current_request_word_and_leaves_cache_untouched():
+    punct = WordInfoRequest("vor.", 1, "sentence", ("Das", "vor.", "steht."), "en")
+    plain = WordInfoRequest("vor", 1, "sentence", ("Das", "vor.", "steht."), "en")
+    key = cache_key(punct, PROMPT_VERSION, MODEL)
+    assert key == cache_key(plain, PROMPT_VERSION, MODEL)
+    svc, engine, store = make([good()])
+    first = svc.lookup(punct, ms())
+    assert first["word"] == "vor."
+    stored = copy.deepcopy(store.get(key))
+
+    out = svc.lookup(plain, ms())  # LRU hit
+    assert out["word"] == "vor"
+    assert list(out)[:3] == list(first)[:3] and list(out)[1] == "word"
+    assert store.get(key) == stored and stored["word"] == "vor."
+    out["lemma"] = "mutated"
+    assert svc.lookup(plain, ms())["lemma"] != "mutated"
+
+    fresh = WordInfoService(lambda: engine, store, MODEL, 100, LruCache())
+    out2 = fresh.lookup(plain, ms())  # store hit
+    assert out2["word"] == "vor" and store.get(key) == stored
+    assert len(engine.calls) == 1

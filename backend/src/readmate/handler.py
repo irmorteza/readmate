@@ -124,7 +124,10 @@ def _decode_json_body(event: dict) -> bytes:
             return base64.b64decode(body, validate=True)
         except (binascii.Error, ValueError):
             raise HttpError(400, "BAD_REQUEST", "Body is not valid base64.") from None
-    return body.encode("utf-8")
+    try:
+        return body.encode("utf-8")
+    except UnicodeEncodeError:
+        raise HttpError(400, "BAD_REQUEST", "Body is not valid text.") from None
 
 
 def _word_info(event: dict, context: object) -> dict:

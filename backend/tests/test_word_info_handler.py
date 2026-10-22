@@ -175,3 +175,10 @@ def test_ocr_with_ocr_path_still_runs():
 
 def test_base64_helper_roundtrip():
     assert base64.b64decode(ocr_event()["body"]) == b"\xff\xd8jpeg"
+
+
+def test_lone_surrogate_in_body_is_400_not_500():
+    event = make_event(body=b"")
+    event["body"] = '{"word":"\ud800"}'
+    status, body = call(event)
+    assert status == 400 and body["error"]["code"] == "BAD_REQUEST"

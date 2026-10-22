@@ -131,3 +131,41 @@ def test_from_env_defaults_effort_low(monkeypatch):
 def test_from_env_without_param_raises_secret_unavailable():
     with pytest.raises(SecretUnavailable):
         AnthropicWordInfoEngine.from_env({}, "m")
+
+
+def _validation_error():
+    response = httpx2.Response(200, request=_REQUEST, text="SECRET BODY")
+    return anthropic.APIResponseValidationError(response, {"x": "SECRET BODY"}, message="SECRET")
+
+
+def test_other_api_error_is_fatal_without_message():
+    eng = AnthropicWordInfoEngine("k", "m", client=FakeClient(error=_validation_error()))
+    with pytest.raises(EngineError) as info:
+        eng.explain("s", "u", {}, 8.0)
+    assert info.value.kind == "fatal"
+    assert info.value.detail == "APIResponseValidationError:200"
+    assert info.value.__suppress_context__ is True and info.value.__cause__ is None
+    assert "SECRET" not in str(info.value) and "SECRET" not in info.value.detail
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        SimpleNamespace(content=None, stop_reason="end_turn", usage=None),
+        SimpleNamespace(content=[SimpleNamespace(type="text")], stop_reason="x", usage=None),
+        SimpleNamespace(content=[], stop_reason="end_turn"),
+        SimpleNamespace(content=[], stop_reason="end_turn", usage=SimpleNamespace()),
+        None,
+    ],
+)
+def test_malformed_response_shape_is_fatal(reply):
+    eng = AnthropicWordInfoEngine("k", "m", client=FakeClient(reply=reply))
+    with pytest.raises(EngineError) as info:
+        eng.explain("s", "u", {}, 8.0)
+    assert (info.value.kind, info.value.detail) == ("fatal", "MalformedResponse:")
+
+
+def test_unrelated_bug_in_client_is_not_swallowed():
+    eng = AnthropicWordInfoEngine("k", "m", client=FakeClient(error=RuntimeError("bug")))
+    with pytest.raises(RuntimeError):
+        eng.explain("s", "u", {}, 8.0)

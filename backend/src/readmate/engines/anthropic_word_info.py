@@ -58,10 +58,15 @@ class AnthropicWordInfoEngine:
             else:
                 kind = "fatal"
             raise EngineError(kind, _detail(e)) from None
-        text = next((b.text for b in message.content if b.type == "text"), "")
-        return EngineReply(
-            text, message.stop_reason, message.usage.input_tokens, message.usage.output_tokens
-        )
+        except anthropic.APIError as e:
+            raise EngineError("fatal", _detail(e)) from None
+        try:
+            text = next((b.text for b in message.content if b.type == "text"), "")
+            return EngineReply(
+                text, message.stop_reason, message.usage.input_tokens, message.usage.output_tokens
+            )
+        except (AttributeError, TypeError, IndexError):
+            raise EngineError("fatal", "MalformedResponse:") from None
 
 
 def _detail(e: Exception) -> str:

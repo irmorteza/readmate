@@ -109,7 +109,8 @@ class WordInfoService:
             if hit is not None:
                 meta = self._meta(start, 0, [], [])
                 st["ms"] = meta["latencyMs"]
-                return {**copy.deepcopy(hit), "meta": meta}
+                # The cache key ignores `word`, so answer with the current request's word.
+                return {**copy.deepcopy(hit), "word": req.word, "meta": meta}
 
             engine = self._get_engine()
             body = self._run(engine, req, remaining_ms, stops, tokens, st)
