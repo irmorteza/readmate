@@ -433,3 +433,26 @@ def test_invalid_example_translation_for_en_is_still_a_200_on_the_first_attempt(
     out = svc.lookup(REQ, ms())
     assert len(engine.calls) == 1
     assert out["exampleTranslation"] == out["exampleEn"] == "The house is big."
+
+
+def test_invalid_output_is_logged_with_a_fixed_code_and_no_model_text(caplog):
+    req = WordInfoRequest(
+        "Verfügung.", 7, "sentence",
+        ("Die", "Stadt", "stellt", "uns", "den", "Saal", "zur", "Verfügung."), "en",
+    )  # fmt: skip
+    body = json.loads(GOOD_TEXT)
+    body["lemma"] = "Verfügung"
+    body["separableVerb"] = {"infinitive": "zurverfügungstellen", "wordIndexes": [2, 6, 7]}
+    bad_reply = EngineReply(json.dumps(body), "end_turn", 5, 30)
+    svc, engine, store = make([bad_reply, bad_reply])
+    with caplog.at_level(logging.INFO, logger="readmate"):
+        with pytest.raises(WordInfoError) as exc:
+            svc.lookup(req, ms())
+    assert exc.value.status == 502 and len(engine.calls) == 2
+    assert store.get(cache_key(req, PROMPT_VERSION, MODEL)) is None
+    lines = [r.getMessage() for r in caplog.records if "word_info_invalid" in r.getMessage()]
+    assert lines == [
+        "word_info_invalid attempt=1 code=separable_parts",
+        "word_info_invalid attempt=2 code=separable_parts",
+    ]
+    assert "zurverfügungstellen" not in caplog.text and "Saal" not in caplog.text

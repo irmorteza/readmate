@@ -151,8 +151,9 @@ class WordInfoService:
                 return validate_model_output(reply.text, reply.stop_reason, req)
             except EngineError as err:
                 last_kind = err.kind
-            except InvalidModelOutput:
+            except InvalidModelOutput as err:
                 last_kind = "invalid"
+                logger.warning("word_info_invalid attempt=%d code=%s", st["attempts"], err.code)
             if last_kind == "fatal":
                 break
             if st["attempts"] >= MAX_ATTEMPTS or remaining_ms() < RETRY_MIN_REMAINING_MS:

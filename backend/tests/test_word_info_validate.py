@@ -332,3 +332,87 @@ def test_english_answer_still_needs_the_example_translation_key():
     del o["exampleTranslation"]
     with pytest.raises(InvalidModelOutput):
         run(o)
+
+
+VERFUEGUNG = WordInfoRequest(
+    word="Verfügung.",
+    word_index=7,
+    kind="sentence",
+    words=("Die", "Stadt", "stellt", "uns", "den", "Saal", "zur", "Verfügung."),
+    target="en",
+)
+
+
+def _verfuegung_answer(separable):
+    o = good()
+    o.update(lemma="Verfügung", separableVerb=separable)
+    return json.dumps(o)
+
+
+def test_three_part_separable_verb_is_invalid_not_a_lemma_override():
+    # Real wi-3 failure: a light-verb construction returned as a three-part "separable verb".
+    text = _verfuegung_answer({"infinitive": "zurverfügungstellen", "wordIndexes": [2, 6, 7]})
+    with pytest.raises(InvalidModelOutput) as exc:
+        validate_model_output(text, "end_turn", VERFUEGUNG)
+    assert exc.value.code == "separable_parts"
+    assert "zurverfügungstellen" not in exc.value.reason
+
+
+@pytest.mark.parametrize("indexes", [[7], [6, 7, 2], list(range(2, 8))])
+def test_separable_verb_must_have_exactly_two_parts(indexes):
+    text = _verfuegung_answer({"infinitive": "stellen", "wordIndexes": indexes})
+    with pytest.raises(InvalidModelOutput) as exc:
+        validate_model_output(text, "end_turn", VERFUEGUNG)
+    assert exc.value.code == "separable_parts"
+
+
+@pytest.mark.parametrize("infinitive", ["zur verfügung stellen", "an rufen", "a\tb", "a\nb"])
+def test_separable_infinitive_must_be_one_word(infinitive):
+    text = _verfuegung_answer({"infinitive": infinitive, "wordIndexes": [2, 7]})
+    with pytest.raises(InvalidModelOutput) as exc:
+        validate_model_output(text, "end_turn", VERFUEGUNG)
+    assert exc.value.code == "separable_parts"
+
+
+def test_two_part_separable_verb_still_overrides_the_lemma():
+    out = run({**good(), "lemma": "an"})
+    assert out["lemma"] == "vorstellen" and len(out["separableVerb"]["wordIndexes"]) == 2
+
+
+@pytest.mark.parametrize(
+    "mutate, code",
+    [
+        (lambda o: o.update(translation="x" * 121), "length"),
+        (lambda o: o.update(translation="  "), "empty"),
+        (lambda o: o.update(senseInContext=5), "string_type"),
+        (lambda o: o.update(pos="Verb"), "enum"),
+        (lambda o: o.update(article="den"), "enum"),
+        (lambda o: o.update(extra=1), "keys"),
+        (lambda o: o.update(lemma="x\ud800"), "string_text"),
+        (lambda o: o.update(separableVerb="vorstellen"), "group_shape"),
+        (lambda o: o["separableVerb"].update(wordIndexes=[1, 6]), "index_range"),
+        (lambda o: o["separableVerb"].update(wordIndexes=[1, 1]), "index_duplicate"),
+        (lambda o: o["separableVerb"].update(wordIndexes="15"), "index_shape"),
+        (lambda o: o["separableVerb"].update(wordIndexes=[1]), "separable_parts"),
+        (lambda o: o.update(expression=_expr(type="proverb")), "enum"),
+    ],
+)
+def test_invalid_output_carries_a_fixed_reason_code(mutate, code):
+    o = good()
+    mutate(o)
+    with pytest.raises(InvalidModelOutput) as exc:
+        run(o)
+    assert exc.value.code == code
+
+
+@pytest.mark.parametrize("stop, code", [("max_tokens", "stop_reason")])
+def test_stop_and_json_failures_have_codes(stop, code):
+    with pytest.raises(InvalidModelOutput) as exc:
+        run(good(), stop)
+    assert exc.value.code == code
+    with pytest.raises(InvalidModelOutput) as exc:
+        validate_model_output("not json", "end_turn", REQ)
+    assert exc.value.code == "json"
+    with pytest.raises(InvalidModelOutput) as exc:
+        validate_model_output("[]", "end_turn", REQ)
+    assert exc.value.code == "not_object"

@@ -29,45 +29,50 @@ _TOP_KEYS = {
 }  # fmt: skip
 _SEPARABLE_KEYS = {"infinitive", "wordIndexes"}
 _EXPRESSION_KEYS = {"text", "meaning", "type", "wordIndexes"}
+_SEPARABLE_PARTS = 2
 _MIN_INDEXES = 2
 _MAX_INDEXES = 12
 
 
 class InvalidModelOutput(Exception):
-    """Model output failed validation. `reason` is short and never holds model text."""
+    """Model output failed validation. `reason` is short and never holds model text.
 
-    def __init__(self, reason: str):
+    `code` is a fixed snake_case label (never model text) that the service logs.
+    """
+
+    def __init__(self, reason: str, code: str = "invalid"):
         super().__init__(reason)
         self.reason = reason
+        self.code = code
 
 
 def _string(obj: dict, key: str, *, required: bool, limit_key: str | None = None) -> str:
     value = obj[key]
     if not isinstance(value, str):
-        raise InvalidModelOutput(f"{key} is not a string")
+        raise InvalidModelOutput(f"{key} is not a string", "string_type")
     try:
         value.encode("utf-8")
     except UnicodeEncodeError:
-        raise InvalidModelOutput(f"{key} is not valid text") from None
+        raise InvalidModelOutput(f"{key} is not valid text", "string_text") from None
     value = value.strip()
     if required and not value:
-        raise InvalidModelOutput(f"{key} is empty")
+        raise InvalidModelOutput(f"{key} is empty", "empty")
     if len(value) > LIMITS[limit_key or key]:
-        raise InvalidModelOutput(f"{key} is too long")
+        raise InvalidModelOutput(f"{key} is too long", "length")
     return value
 
 
 def _indexes(obj: dict, group: str, size: int) -> list[int]:
     raw = obj["wordIndexes"]
     if not isinstance(raw, list):
-        raise InvalidModelOutput(f"{group} wordIndexes is not a list")
+        raise InvalidModelOutput(f"{group} wordIndexes is not a list", "index_shape")
     if not _MIN_INDEXES <= len(raw) <= _MAX_INDEXES:
-        raise InvalidModelOutput(f"{group} wordIndexes has a bad length")
+        raise InvalidModelOutput(f"{group} wordIndexes has a bad length", "index_shape")
     for i in raw:
         if type(i) is not int or not 0 <= i < size:
-            raise InvalidModelOutput(f"{group} wordIndexes has a bad entry")
+            raise InvalidModelOutput(f"{group} wordIndexes has a bad entry", "index_range")
     if len(set(raw)) != len(raw):
-        raise InvalidModelOutput(f"{group} wordIndexes has duplicates")
+        raise InvalidModelOutput(f"{group} wordIndexes has duplicates", "index_duplicate")
     return sorted(raw)
 
 
@@ -75,9 +80,9 @@ def _group(raw, group: str, keys: set[str]):
     if raw is None:
         return None
     if not isinstance(raw, dict):
-        raise InvalidModelOutput(f"{group} is not an object or null")
+        raise InvalidModelOutput(f"{group} is not an object or null", "group_shape")
     if set(raw) != keys:
-        raise InvalidModelOutput(f"{group} has the wrong keys")
+        raise InvalidModelOutput(f"{group} has the wrong keys", "group_shape")
     return raw
 
 
@@ -86,6 +91,11 @@ def _separable(raw, req: WordInfoRequest) -> dict | None:
     if raw is None:
         return None
     infinitive = _string(raw, "infinitive", required=True)
+    # A separable verb is exactly a stem and a particle; light-verb constructions and longer
+    # units belong in `expression`, so anything else is invalid output (retried, never cached).
+    parts = raw["wordIndexes"]
+    if (isinstance(parts, list) and len(parts) != _SEPARABLE_PARTS) or len(infinitive.split()) != 1:
+        raise InvalidModelOutput("separableVerb is not a two-part verb", "separable_parts")
     indexes = _indexes(raw, "separableVerb", len(req.words))
     if req.word_index not in indexes:
         logger.info("group_dropped group=separableVerb")
@@ -101,7 +111,7 @@ def _expression(raw, req: WordInfoRequest) -> dict | None:
     meaning = _string(raw, "meaning", required=True)
     kind = raw["type"]
     if not isinstance(kind, str) or kind not in EXPRESSION_TYPES:
-        raise InvalidModelOutput("expression type is not allowed")
+        raise InvalidModelOutput("expression type is not allowed", "enum")
     indexes = _indexes(raw, "expression", len(req.words))
     if req.word_index not in indexes:
         logger.info("group_dropped group=expression")
@@ -111,26 +121,26 @@ def _expression(raw, req: WordInfoRequest) -> dict | None:
 
 def validate_model_output(text: str, stop_reason: str, req: WordInfoRequest) -> dict:
     if stop_reason != "end_turn":
-        raise InvalidModelOutput("unexpected stop reason")
+        raise InvalidModelOutput("unexpected stop reason", "stop_reason")
     if not isinstance(text, str):
-        raise InvalidModelOutput("output is not text")
+        raise InvalidModelOutput("output is not text", "not_text")
     try:
         data = json.loads(text)
     except (ValueError, RecursionError):
-        raise InvalidModelOutput("output is not valid JSON") from None
+        raise InvalidModelOutput("output is not valid JSON", "json") from None
     if not isinstance(data, dict):
-        raise InvalidModelOutput("output is not a JSON object")
+        raise InvalidModelOutput("output is not a JSON object", "not_object")
     if set(data) != _TOP_KEYS:
-        raise InvalidModelOutput("output has the wrong keys")
+        raise InvalidModelOutput("output has the wrong keys", "keys")
 
     lemma = _string(data, "lemma", required=True)
     pos = data["pos"]
     if not isinstance(pos, str) or pos not in POS:
-        raise InvalidModelOutput("pos is not allowed")
+        raise InvalidModelOutput("pos is not allowed", "enum")
     phonetic = _string(data, "phonetic", required=False)
     article = data["article"]
     if not isinstance(article, str) or article not in (*ARTICLES, ""):
-        raise InvalidModelOutput("article is not allowed")
+        raise InvalidModelOutput("article is not allowed", "enum")
     plural = _string(data, "plural", required=False)
     translation = _string(data, "translation", required=True)
     sense = _string(data, "senseInContext", required=True)
