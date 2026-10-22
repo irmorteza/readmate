@@ -52,8 +52,8 @@ Rules:
 last word before the end mark. When the tapped word is part of a separable verb, give the infinitive \
 (with the particle) and the indexes of both parts. Otherwise separableVerb is null. When the tapped \
 word is the separable particle (for example "zu." in "Sie macht das Fenster zu."), describe the \
-separable verb: lemma is the infinitive with the particle ("zumachen"), pos is verb, and \
-separableVerb is filled.
+separable verb: lemma is the infinitive with the particle ("zumachen"), pos is verb, \
+separableVerb is filled, and phonetic is still the IPA of the tapped word as written.
 - Multi-word expressions: detect collocations, idioms, reflexive or prepositional verb patterns and \
 light-verb constructions that include the tapped word. Give the canonical form (for example \
 "zur Verfügung stellen", "sich freuen auf"), its meaning, its type and the indexes of its words in \

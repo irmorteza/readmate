@@ -81,6 +81,7 @@ def test_system_prompt_covers_targets_and_backlog_fixes():
         "Die Suppe ist heiß.",
         "jemanden jemandem vorstellen",
         "exampleTranslation",
+        "phonetic is still the IPA of the tapped word as written",
     ):
         assert needle in SYSTEM_PROMPT, needle
     assert "English gloss" not in SYSTEM_PROMPT
@@ -148,7 +149,7 @@ def test_schema_enums_match_constants():
 PINNED = {
     "wi-1": "a6efae7c514a139dd62ad8ba8f670a4c4998740d5db7d5b257d05fb64188dda4",
     "wi-2": "ddc01f7c1e28cecb035f093ca861d8bd79607f1942a3c7f014c4ef9f0a82c39f",
-    "wi-3": "45c332ea36823ba044fda1bd0c1127633f5ac4a065ae17285e9874008c92ff34",
+    "wi-3": "6f75d5ef69623997a0ffab13c7b51f12aab59ffdbda6d92c85cc0a9b8c3fc174",
 }
 
 
