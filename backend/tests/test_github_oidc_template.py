@@ -262,6 +262,14 @@ def test_app_template_word_info_environment():
         assert "Default" in params[name], name
 
 
+def test_function_timeout_and_memory_cover_a_cold_word_info_call():
+    # Cold first lookup took 14.7 s against the old 15 s timeout. The per-call read timeout (8 s)
+    # and the retry deadline (>= 9.5 s remaining) are unchanged, so the retry still never overruns.
+    function = load("template.yaml")["Resources"]["OcrFunction"]["Properties"]
+    assert function["Timeout"] == 30
+    assert function["MemorySize"] == 1024
+
+
 def test_execution_role_name_is_derived_from_the_stack_prefix(exec_role):
     assert exec_role["RoleName"] == "${AppStackName}-ocr-execution"
 

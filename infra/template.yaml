@@ -43,8 +43,8 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-ocr"
       Runtime: python3.13
       Architectures: [arm64]
-      MemorySize: 512
-      Timeout: 15
+      MemorySize: 1024
+      Timeout: 30
       CodeUri: ../backend/src
       Handler: readmate.handler.handler
       # No ReservedConcurrentExecutions: this account's concurrency limit (10) is too low to
