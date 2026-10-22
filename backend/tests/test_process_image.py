@@ -68,7 +68,7 @@ def test_reference_page_hyphen_pairs_merge():
     # "# known engine error" rather than weakening the merge rule.
     out = process_image(b"", FakeEngine(FIXTURES / "book_page.textract.json"))
     texts = [w["text"] for w in out["words"]]
-    for expected in ["angehaltenem", "aufzufangen", "Details", "Vorstellungskraft"]:
+    for expected in ["hellerleuchteten", "herabsanken", "Geduld", "Kerzen"]:
         assert expected in texts
 
 

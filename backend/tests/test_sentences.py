@@ -56,7 +56,7 @@ def test_book_fixture_entries():
     assert [(e["wordIds"][0], e["wordIds"][-1], e["kind"]) for e in entries] == EXPECTED
     check_invariants(r, entries)
     assert [e["id"] for e in entries] == list(range(15))
-    assert entries[11]["text"] == "»Sind Sie die Mutter von"
+    assert entries[11]["text"] == "»Gute Nacht und Dank für"
     jsonschema.validate({**r, "engine": "fake", "sentences": entries}, SCHEMA)
 
 
@@ -208,4 +208,4 @@ def test_fallback_one_fragment_per_line():
     assert len(entries) == 23
     assert set(kinds(entries)) == {"fragment"}
     assert [i for e in entries for i in e["wordIds"]] == [w["id"] for w in r["words"]]
-    assert entries[11]["text"] == "da."
+    assert entries[11]["text"] == "brannten."

@@ -66,7 +66,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.5967788696289,
-      "Text": "Als Linn anderthalb Jahre alt war und laufen gelernt hatte,",
+      "Text": "Die Reise dauerte Stunden länger als sie jemals befürchtet hatte,",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7242969274520874,
@@ -115,7 +115,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.35710906982422,
-      "Text": "wollte sie jede Treppe allein hochklettern. Sie zappelte und",
+      "Text": "und hinter dem Fenster verschwand alles. Sie saß fast",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7272270321846008,
@@ -163,7 +163,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.58869934082031,
-      "Text": "schrie, sobald ich sie auf den Arm hob, auch an die Hand",
+      "Text": "reglos, weil sie schon lange vom Meer träumte, doch draußen lag Schnee",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7327674627304077,
@@ -214,7 +214,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.2620849609375,
-      "Text": "durfte ich sie nicht nehmen. So viele Male stand ich mit an-",
+      "Text": "und wollte auch nicht schmelzen. Als der Zug langsam in den hell-",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7364065051078796,
@@ -265,7 +265,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.43031311035156,
-      "Text": "gehaltenem Atem hinter ihr, während sie wie in Zeitlupe",
+      "Text": "erleuchteten Bahnhof endlich einfuhr, sah sie bereits ihre Tante",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7419864535331726,
@@ -313,7 +313,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.26744842529297,
-      "Text": "Stufe um Stufe hochstieg und dabei gefährlich ins Wanken",
+      "Text": "Berta auf Gleis zwei stehen und freundlich mit Blumen",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7453317642211914,
@@ -361,7 +361,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.60585021972656,
-      "Text": "geriet. Jeden Moment war ich bereit, meine Tochter auf-",
+      "Text": "winken. Tante Berta umarmte sie fest, während Schneeflocken herab-",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7486730813980103,
@@ -409,7 +409,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.58718872070312,
-      "Text": "zufangen. Ich sah das Stolpern und Stürzen in grellen De-",
+      "Text": "sanken. Sie wollte nur Ruhe und Wärme sowie etwas Ge-",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7525070905685425,
@@ -458,7 +458,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.62998962402344,
-      "Text": "tails. Bei dem Gedanken an das Geräusch, den dumpfen",
+      "Text": "duld. Sie tranken Tee in der Küche, dem wärmsten",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.755387008190155,
@@ -506,7 +506,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.11097717285156,
-      "Text": "Aufprall, kniff ich unweigerlich die Augen zusammen. Mit",
+      "Text": "Raum, und sahen gemeinsam dem Schneetreiben zu. Dann",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7598615288734436,
@@ -553,7 +553,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.60150146484375,
-      "Text": "dem Kind war mit einem Mal eine neue, intensive Vorstel-",
+      "Text": "zeigte Berta ihr das kleine Gästezimmer oben links, wo Ker-",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7625542879104614,
@@ -602,7 +602,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.51470947265625,
-      "Text": "lungskraft da.",
+      "Text": "zen brannten.",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.1710989624261856,
@@ -643,7 +643,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.43331146240234,
-      "Text": "Es war Ende Mai, ein Samstagvormittag, als Linn einen",
+      "Text": "Bald kam Onkel Hans, ein Lehrer, der Kindern gern",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7758932709693909,
@@ -691,7 +691,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.351806640625,
-      "Text": "Schwächeanfall erlitt. Sie hielt einen Vortrag vor größerem",
+      "Text": "Märchen erzählte. Sie mochte seine Stimme und seine",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7780060172080994,
@@ -738,7 +738,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.39788818359375,
-      "Text": "Publikum, auf einer Tagung in einem Hotel, da verlor sie das",
+      "Text": "Güte, die ihr Frieden schenkten wie Musik, und sie vergaß ihre",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7785975933074951,
@@ -788,7 +788,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.42292022705078,
-      "Text": "Bewusstsein. Vor den Augen der Leute war sie umgekippt.",
+      "Text": "Müdigkeit. Sie aß Suppe mit Brot und schwieg lange.",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7790710926055908,
@@ -836,7 +836,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.11473846435547,
-      "Text": "Ich bekam einen Anruf aus einer Klinik in Nordbrandenburg.",
+      "Text": "Danach suchte sie Papier und schrieb Karten an Freunde.",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7785094976425171,
@@ -884,7 +884,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 86.59110260009766,
-      "Text": "»Sind Sie die Mutter von -?«",
+      "Text": "»Gute Nacht und Dank für -?«",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.3750341832637787,
@@ -929,7 +929,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.09416198730469,
-      "Text": "Ich saß an meinem Schreibtisch im Dachgeschoss, vertieft",
+      "Text": "Sie lag mit offenen Augen voller Sorgen, denn",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7545380592346191,
@@ -976,7 +976,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.34362030029297,
-      "Text": "in die Arbeit. Die Luke stand offen, es war ein drückender",
+      "Text": "sie hatte Heimweh. Als Anna wach wurde, hörte sie schon leise",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7851189970970154,
@@ -1026,7 +1026,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 99.23345184326172,
-      "Text": "Tag, Möwen kreischten, ich wollte später mit dem Fahrrad",
+      "Text": "Musik, Geschirr klapperte, und es roch nach frischem Brot",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.7855757474899292,
@@ -1074,7 +1074,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 98.82881927490234,
-      "Text": "zum Deich.",
+      "Text": "und Kaffee.",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.14377261698246002,
@@ -1115,7 +1115,7 @@
     {
       "BlockType": "LINE",
       "Confidence": 94.01406860351562,
-      "Text": "7",
+      "Text": "9",
       "Geometry": {
         "BoundingBox": {
           "Width": 0.014269540086388588,
@@ -1155,7 +1155,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.76483154296875,
-      "Text": "Als",
+      "Text": "Die",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1189,7 +1189,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.81365966796875,
-      "Text": "Linn",
+      "Text": "Reise",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1223,7 +1223,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.49478149414062,
-      "Text": "anderthalb",
+      "Text": "dauerte",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1257,7 +1257,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.83318328857422,
-      "Text": "Jahre",
+      "Text": "Stunden",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1291,7 +1291,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.36543273925781,
-      "Text": "alt",
+      "Text": "länger",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1325,7 +1325,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.49059295654297,
-      "Text": "war",
+      "Text": "als",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1359,7 +1359,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.873046875,
-      "Text": "und",
+      "Text": "sie",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1393,7 +1393,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.44435119628906,
-      "Text": "laufen",
+      "Text": "jemals",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1427,7 +1427,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.28411865234375,
-      "Text": "gelernt",
+      "Text": "befürchtet",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1495,7 +1495,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.76992797851562,
-      "Text": "wollte",
+      "Text": "und",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1529,7 +1529,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.98218536376953,
-      "Text": "sie",
+      "Text": "hinter",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1563,7 +1563,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.69328308105469,
-      "Text": "jede",
+      "Text": "dem",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1597,7 +1597,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.84215545654297,
-      "Text": "Treppe",
+      "Text": "Fenster",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1631,7 +1631,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.72417449951172,
-      "Text": "allein",
+      "Text": "verschwand",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1665,7 +1665,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.92617797851562,
-      "Text": "hochklettern.",
+      "Text": "alles.",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1733,7 +1733,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.03599548339844,
-      "Text": "zappelte",
+      "Text": "saß",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1767,7 +1767,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.79332733154297,
-      "Text": "und",
+      "Text": "fast",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1801,7 +1801,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.03838348388672,
-      "Text": "schrie,",
+      "Text": "reglos,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1835,7 +1835,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.853515625,
-      "Text": "sobald",
+      "Text": "weil",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1869,7 +1869,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.65501403808594,
-      "Text": "ich",
+      "Text": "sie",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1903,7 +1903,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.39871215820312,
-      "Text": "sie",
+      "Text": "schon",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1937,7 +1937,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.56632995605469,
-      "Text": "auf",
+      "Text": "lange",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -1971,7 +1971,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.77379608154297,
-      "Text": "den",
+      "Text": "vom",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2005,7 +2005,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.892578125,
-      "Text": "Arm",
+      "Text": "Meer",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2039,7 +2039,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.87224578857422,
-      "Text": "hob,",
+      "Text": "träumte,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2073,7 +2073,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.6534194946289,
-      "Text": "auch",
+      "Text": "doch",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2107,7 +2107,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.02263641357422,
-      "Text": "an",
+      "Text": "draußen",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2141,7 +2141,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.44515228271484,
-      "Text": "die",
+      "Text": "lag",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2175,7 +2175,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.892578125,
-      "Text": "Hand",
+      "Text": "Schnee",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2209,7 +2209,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 97.06572723388672,
-      "Text": "durfte",
+      "Text": "und",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2243,7 +2243,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.24745178222656,
-      "Text": "ich",
+      "Text": "wollte",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2277,7 +2277,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.43936920166016,
-      "Text": "sie",
+      "Text": "auch",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2345,7 +2345,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.63739776611328,
-      "Text": "nehmen.",
+      "Text": "schmelzen.",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2379,7 +2379,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.55815887451172,
-      "Text": "So",
+      "Text": "Als",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2413,7 +2413,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.71360778808594,
-      "Text": "viele",
+      "Text": "der",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2447,7 +2447,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.76403045654297,
-      "Text": "Male",
+      "Text": "Zug",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2481,7 +2481,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.85271453857422,
-      "Text": "stand",
+      "Text": "langsam",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2515,7 +2515,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.65421295166016,
-      "Text": "ich",
+      "Text": "in",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2549,7 +2549,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.69486999511719,
-      "Text": "mit",
+      "Text": "den",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2583,7 +2583,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.71432495117188,
-      "Text": "an-",
+      "Text": "hell-",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2617,7 +2617,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.57609558105469,
-      "Text": "gehaltenem",
+      "Text": "erleuchteten",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2651,7 +2651,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.84295654296875,
-      "Text": "Atem",
+      "Text": "Bahnhof",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2685,7 +2685,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.83159637451172,
-      "Text": "hinter",
+      "Text": "endlich",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2719,7 +2719,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.5167007446289,
-      "Text": "ihr,",
+      "Text": "einfuhr,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2753,7 +2753,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.6021957397461,
-      "Text": "während",
+      "Text": "sah",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2821,7 +2821,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.47525024414062,
-      "Text": "wie",
+      "Text": "bereits",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2855,7 +2855,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.44993591308594,
-      "Text": "in",
+      "Text": "ihre",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2889,7 +2889,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.48692321777344,
-      "Text": "Zeitlupe",
+      "Text": "Tante",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2923,7 +2923,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.8366928100586,
-      "Text": "Stufe",
+      "Text": "Berta",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2957,7 +2957,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.17889404296875,
-      "Text": "um",
+      "Text": "auf",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -2991,7 +2991,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.89608764648438,
-      "Text": "Stufe",
+      "Text": "Gleis",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3025,7 +3025,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.0344009399414,
-      "Text": "hochstieg",
+      "Text": "zwei",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3059,7 +3059,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.873046875,
-      "Text": "und",
+      "Text": "stehen",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3093,7 +3093,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.4736557006836,
-      "Text": "dabei",
+      "Text": "und",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3127,7 +3127,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.64636993408203,
-      "Text": "gefährlich",
+      "Text": "freundlich",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3161,7 +3161,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.59562683105469,
-      "Text": "ins",
+      "Text": "mit",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3195,7 +3195,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.87224578857422,
-      "Text": "Wanken",
+      "Text": "Blumen",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3229,7 +3229,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.57609558105469,
-      "Text": "geriet.",
+      "Text": "winken.",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3263,7 +3263,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.80309295654297,
-      "Text": "Jeden",
+      "Text": "Tante",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3297,7 +3297,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.892578125,
-      "Text": "Moment",
+      "Text": "Berta",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3331,7 +3331,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.44255828857422,
-      "Text": "war",
+      "Text": "umarmte",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3365,7 +3365,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.77300262451172,
-      "Text": "ich",
+      "Text": "sie",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3399,7 +3399,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.53304290771484,
-      "Text": "bereit,",
+      "Text": "fest,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3433,7 +3433,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.4345932006836,
-      "Text": "meine",
+      "Text": "während",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3467,7 +3467,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.75186920166016,
-      "Text": "Tochter",
+      "Text": "Schneeflocken",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3501,7 +3501,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.245849609375,
-      "Text": "auf-",
+      "Text": "herab-",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3535,7 +3535,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.93594360351562,
-      "Text": "zufangen.",
+      "Text": "sanken.",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3569,7 +3569,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.75426483154297,
-      "Text": "Ich",
+      "Text": "Sie",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3603,7 +3603,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.59642028808594,
-      "Text": "sah",
+      "Text": "wollte",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3637,7 +3637,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.6534194946289,
-      "Text": "das",
+      "Text": "nur",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3671,7 +3671,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.91131591796875,
-      "Text": "Stolpern",
+      "Text": "Ruhe",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3739,7 +3739,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.47285461425781,
-      "Text": "Stürzen",
+      "Text": "Wärme",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3773,7 +3773,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.43936920166016,
-      "Text": "in",
+      "Text": "sowie",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3807,7 +3807,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.72257995605469,
-      "Text": "grellen",
+      "Text": "etwas",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3841,7 +3841,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.49398040771484,
-      "Text": "De-",
+      "Text": "Ge-",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3875,7 +3875,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.44435119628906,
-      "Text": "tails.",
+      "Text": "duld.",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3909,7 +3909,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.76483154296875,
-      "Text": "Bei",
+      "Text": "Sie",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3943,7 +3943,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.80309295654297,
-      "Text": "dem",
+      "Text": "tranken",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -3977,7 +3977,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.7315444946289,
-      "Text": "Gedanken",
+      "Text": "Tee",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4011,7 +4011,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.3359375,
-      "Text": "an",
+      "Text": "in",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4045,7 +4045,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.85192108154297,
-      "Text": "das",
+      "Text": "der",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4079,7 +4079,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.20360565185547,
-      "Text": "Geräusch,",
+      "Text": "Küche,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4113,7 +4113,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.85271453857422,
-      "Text": "den",
+      "Text": "dem",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4147,7 +4147,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.68192291259766,
-      "Text": "dumpfen",
+      "Text": "wärmsten",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4181,7 +4181,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.13524627685547,
-      "Text": "Aufprall,",
+      "Text": "Raum,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4215,7 +4215,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.00541687011719,
-      "Text": "kniff",
+      "Text": "und",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4249,7 +4249,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.61347961425781,
-      "Text": "ich",
+      "Text": "sahen",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4283,7 +4283,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.7217788696289,
-      "Text": "unweigerlich",
+      "Text": "gemeinsam",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4317,7 +4317,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.71360778808594,
-      "Text": "die",
+      "Text": "dem",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4351,7 +4351,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.83159637451172,
-      "Text": "Augen",
+      "Text": "Schneetreiben",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4385,7 +4385,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.23281860351562,
-      "Text": "zusammen.",
+      "Text": "zu.",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4419,7 +4419,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.6338882446289,
-      "Text": "Mit",
+      "Text": "Dann",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4453,7 +4453,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.81365966796875,
-      "Text": "dem",
+      "Text": "zeigte",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4487,7 +4487,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.951171875,
-      "Text": "Kind",
+      "Text": "Berta",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4521,7 +4521,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.541015625,
-      "Text": "war",
+      "Text": "ihr",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4555,7 +4555,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.81285858154297,
-      "Text": "mit",
+      "Text": "das",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4589,7 +4589,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.59323120117188,
-      "Text": "einem",
+      "Text": "kleine",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4623,7 +4623,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.84215545654297,
-      "Text": "Mal",
+      "Text": "Gästezimmer",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4657,7 +4657,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.39472961425781,
-      "Text": "eine",
+      "Text": "oben",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4691,7 +4691,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.02044677734375,
-      "Text": "neue,",
+      "Text": "links,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4725,7 +4725,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.84215545654297,
-      "Text": "intensive",
+      "Text": "wo",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4759,7 +4759,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.20360565185547,
-      "Text": "Vorstel-",
+      "Text": "Ker-",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4793,7 +4793,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.65262603759766,
-      "Text": "lungskraft",
+      "Text": "zen",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4827,7 +4827,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.37679290771484,
-      "Text": "da.",
+      "Text": "brannten.",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4861,7 +4861,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.65581512451172,
-      "Text": "Es",
+      "Text": "Bald",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4895,7 +4895,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.5703125,
-      "Text": "war",
+      "Text": "kam",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4929,7 +4929,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.76243591308594,
-      "Text": "Ende",
+      "Text": "Onkel",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -4963,7 +4963,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.76322937011719,
-      "Text": "Mai,",
+      "Text": "Hans,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5031,7 +5031,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.41266632080078,
-      "Text": "Samstagvormittag,",
+      "Text": "Lehrer,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5065,7 +5065,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.65421295166016,
-      "Text": "als",
+      "Text": "der",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5099,7 +5099,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.77220153808594,
-      "Text": "Linn",
+      "Text": "Kindern",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5133,7 +5133,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.36543273925781,
-      "Text": "einen",
+      "Text": "gern",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5167,7 +5167,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.76753997802734,
-      "Text": "Schwächeanfall",
+      "Text": "Märchen",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5201,7 +5201,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.09458923339844,
-      "Text": "erlitt.",
+      "Text": "erzählte.",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5269,7 +5269,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.5322494506836,
-      "Text": "hielt",
+      "Text": "mochte",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5303,7 +5303,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.71360778808594,
-      "Text": "einen",
+      "Text": "seine",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5337,7 +5337,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.51271057128906,
-      "Text": "Vortrag",
+      "Text": "Stimme",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5371,7 +5371,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.16593170166016,
-      "Text": "vor",
+      "Text": "und",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5405,7 +5405,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.45252227783203,
-      "Text": "größerem",
+      "Text": "seine",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5439,7 +5439,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.63468170166016,
-      "Text": "Publikum,",
+      "Text": "Güte,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5473,7 +5473,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.716796875,
-      "Text": "auf",
+      "Text": "die",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5507,7 +5507,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.65581512451172,
-      "Text": "einer",
+      "Text": "ihr",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5541,7 +5541,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.931640625,
-      "Text": "Tagung",
+      "Text": "Frieden",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5575,7 +5575,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.04157257080078,
-      "Text": "in",
+      "Text": "schenkten",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5609,7 +5609,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.81796264648438,
-      "Text": "einem",
+      "Text": "wie",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5643,7 +5643,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.91131591796875,
-      "Text": "Hotel,",
+      "Text": "Musik,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5677,7 +5677,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.56472778320312,
-      "Text": "da",
+      "Text": "und",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5711,7 +5711,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.25562286376953,
-      "Text": "verlor",
+      "Text": "sie",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5745,7 +5745,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.20292663574219,
-      "Text": "sie",
+      "Text": "vergaß",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5779,7 +5779,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.6436538696289,
-      "Text": "das",
+      "Text": "ihre",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5813,7 +5813,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.16963958740234,
-      "Text": "Bewusstsein.",
+      "Text": "Müdigkeit.",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5847,7 +5847,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.80309295654297,
-      "Text": "Vor",
+      "Text": "Sie",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5881,7 +5881,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.83318328857422,
-      "Text": "den",
+      "Text": "aß",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5915,7 +5915,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.91131591796875,
-      "Text": "Augen",
+      "Text": "Suppe",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5949,7 +5949,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.64285278320312,
-      "Text": "der",
+      "Text": "mit",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -5983,7 +5983,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.7120132446289,
-      "Text": "Leute",
+      "Text": "Brot",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6017,7 +6017,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.25222778320312,
-      "Text": "war",
+      "Text": "und",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6051,7 +6051,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.87974548339844,
-      "Text": "sie",
+      "Text": "schwieg",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6085,7 +6085,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.6021957397461,
-      "Text": "umgekippt.",
+      "Text": "lange.",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6119,7 +6119,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.41246795654297,
-      "Text": "Ich",
+      "Text": "Danach",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6153,7 +6153,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.2783432006836,
-      "Text": "bekam",
+      "Text": "suchte",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6187,7 +6187,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.39791870117188,
-      "Text": "einen",
+      "Text": "sie",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6221,7 +6221,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.84375,
-      "Text": "Anruf",
+      "Text": "Papier",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6255,7 +6255,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.0577163696289,
-      "Text": "aus",
+      "Text": "und",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6289,7 +6289,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.19622802734375,
-      "Text": "einer",
+      "Text": "schrieb",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6323,7 +6323,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.67375183105469,
-      "Text": "Klinik",
+      "Text": "Karten",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6357,7 +6357,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.21077728271484,
-      "Text": "in",
+      "Text": "an",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6391,7 +6391,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 96.9616928100586,
-      "Text": "Nordbrandenburg.",
+      "Text": "Freunde.",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6425,7 +6425,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 57.16816711425781,
-      "Text": "»Sind",
+      "Text": "»Gute",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6459,7 +6459,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.53702545166016,
-      "Text": "Sie",
+      "Text": "Nacht",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6493,7 +6493,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.57609558105469,
-      "Text": "die",
+      "Text": "und",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6527,7 +6527,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.892578125,
-      "Text": "Mutter",
+      "Text": "Dank",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6561,7 +6561,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.26909637451172,
-      "Text": "von",
+      "Text": "für",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6629,7 +6629,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.71520233154297,
-      "Text": "Ich",
+      "Text": "Sie",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6663,7 +6663,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.28312683105469,
-      "Text": "saß",
+      "Text": "lag",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6697,7 +6697,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.0234375,
-      "Text": "an",
+      "Text": "mit",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6731,7 +6731,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.32796478271484,
-      "Text": "meinem",
+      "Text": "offenen",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6765,7 +6765,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.3759994506836,
-      "Text": "Schreibtisch",
+      "Text": "Augen",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6799,7 +6799,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.097900390625,
-      "Text": "im",
+      "Text": "voller",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6833,7 +6833,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.40290832519531,
-      "Text": "Dachgeschoss,",
+      "Text": "Sorgen,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6867,7 +6867,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.52678680419922,
-      "Text": "vertieft",
+      "Text": "denn",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6901,7 +6901,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.326171875,
-      "Text": "in",
+      "Text": "sie",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6935,7 +6935,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.56791687011719,
-      "Text": "die",
+      "Text": "hatte",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -6969,7 +6969,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.45842742919922,
-      "Text": "Arbeit.",
+      "Text": "Heimweh.",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7003,7 +7003,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.79412841796875,
-      "Text": "Die",
+      "Text": "Als",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7037,7 +7037,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.84375,
-      "Text": "Luke",
+      "Text": "Anna",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7071,7 +7071,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.73552703857422,
-      "Text": "stand",
+      "Text": "wach",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7105,7 +7105,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.4068832397461,
-      "Text": "offen,",
+      "Text": "wurde,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7139,7 +7139,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.73625183105469,
-      "Text": "es",
+      "Text": "hörte",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7173,7 +7173,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.48003387451172,
-      "Text": "war",
+      "Text": "sie",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7207,7 +7207,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.01805877685547,
-      "Text": "ein",
+      "Text": "schon",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7241,7 +7241,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.41266632080078,
-      "Text": "drückender",
+      "Text": "leise",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7275,7 +7275,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.61834716796875,
-      "Text": "Tag,",
+      "Text": "Musik,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7309,7 +7309,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.20021057128906,
-      "Text": "Möwen",
+      "Text": "Geschirr",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7343,7 +7343,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.56007385253906,
-      "Text": "kreischten,",
+      "Text": "klapperte,",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7377,7 +7377,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.3580551147461,
-      "Text": "ich",
+      "Text": "und",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7411,7 +7411,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.81796264648438,
-      "Text": "wollte",
+      "Text": "es",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7445,7 +7445,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.51702117919922,
-      "Text": "später",
+      "Text": "roch",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7479,7 +7479,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.65421295166016,
-      "Text": "mit",
+      "Text": "nach",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7513,7 +7513,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.4541244506836,
-      "Text": "dem",
+      "Text": "frischem",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7547,7 +7547,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.92107391357422,
-      "Text": "Fahrrad",
+      "Text": "Brot",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7581,7 +7581,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 99.09757232666016,
-      "Text": "zum",
+      "Text": "und",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7615,7 +7615,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 98.56007385253906,
-      "Text": "Deich.",
+      "Text": "Kaffee.",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
@@ -7649,7 +7649,7 @@
     {
       "BlockType": "WORD",
       "Confidence": 94.01406860351562,
-      "Text": "7",
+      "Text": "9",
       "TextType": "PRINTED",
       "Geometry": {
         "BoundingBox": {
