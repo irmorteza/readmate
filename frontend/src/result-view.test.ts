@@ -33,21 +33,27 @@ function fakeDevMode(initial = false) {
   };
 }
 
+function fakeTarget(initial = "en") {
+  let code = initial;
+  return { get: () => code, set: vi.fn((next: string) => void (code = next)) };
+}
+
 function mount(
   result = gappedResult,
   translation: TranslationService = service(),
   extra: { pageLabel?: string; sentenceTranslation?: string } = {},
   devMode = fakeDevMode(),
+  targetLanguage = fakeTarget(),
 ) {
   const onNewPhoto = vi.fn();
   const speak = vi.fn();
   const comingSoon = vi.fn();
   const view = createResultView(
     { result, imageUrl: "blob:img", ...extra },
-    { translation, onNewPhoto, speak, comingSoon, devMode, build: "abc1234" },
+    { translation, onNewPhoto, speak, comingSoon, devMode, targetLanguage, build: "abc1234" },
   );
   document.body.replaceChildren(view);
-  return { view, onNewPhoto, translation, speak, comingSoon, devMode };
+  return { view, onNewPhoto, translation, speak, comingSoon, devMode, targetLanguage };
 }
 
 const pane = (name: string) => document.querySelector<HTMLElement>(`[data-pane="${name}"]`)!;
@@ -727,5 +733,79 @@ describe("part highlights", () => {
       expect(content).not.toContain("tok-SECRET-123");
       expect(content).not.toContain("X-Pilot-Token");
     }
+  });
+});
+
+describe("target language", () => {
+  const pick = (code: string) => {
+    const select = sheet().querySelector<HTMLSelectElement>("select")!;
+    select.value = code;
+    select.dispatchEvent(new Event("change"));
+  };
+  const withTarget = (req: WordInfoRequest, groups: Partial<WordInfo> = {}): WordInfo => ({
+    ...info(req.word),
+    target: req.target,
+    translation: `${req.target}:${req.word}`,
+    ...groups,
+  });
+  const hl = (style: string) => document.querySelectorAll(`.word.hl-${style}`).length;
+
+  it("sends the stored target with a tap", () => {
+    const { translation } = mount(gappedResult, service(), {}, fakeDevMode(), fakeTarget("fa"));
+    word(2).click();
+    expect(vi.mocked(translation.lookup).mock.calls[0][0].target).toBe("fa");
+  });
+
+  it("re-runs the lookup for the current word when the picker changes", async () => {
+    const { translation, targetLanguage } = mount(gappedResult, service(async (req) => withTarget(req)));
+    word(2).click();
+    await vi.waitFor(() => expect(text(".translation")).toBe("en:Vorstellungskraft"));
+    pick("ar");
+    expect(targetLanguage.set).toHaveBeenCalledWith("ar");
+    expect(translation.lookup).toHaveBeenCalledTimes(2);
+    const [first, second] = vi.mocked(translation.lookup).mock.calls.map((c) => c[0]);
+    expect(second).toEqual({ ...first, target: "ar" });
+    await vi.waitFor(() => expect(text(".translation")).toBe("ar:Vorstellungskraft"));
+  });
+
+  it("shows only the last choice when the picker changes twice quickly", async () => {
+    const pending = new Map<string, (v: WordInfo) => void>();
+    mount(
+      gappedResult,
+      service((req) =>
+        req.target === "en" ? Promise.resolve(withTarget(req)) : new Promise<WordInfo>((r) => pending.set(req.target, r)),
+      ),
+    );
+    word(2).click();
+    await vi.waitFor(() => expect(text(".translation")).toBe("en:Vorstellungskraft"));
+    pick("fa");
+    pick("ar");
+    pending.get("ar")!(withTarget({ ...({ word: "Vorstellungskraft" } as WordInfoRequest), target: "ar" }));
+    await vi.waitFor(() => expect(text(".translation")).toBe("ar:Vorstellungskraft"));
+    pending.get("fa")!(withTarget({ ...({ word: "Vorstellungskraft" } as WordInfoRequest), target: "fa" }));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(text(".translation")).toBe("ar:Vorstellungskraft");
+  });
+
+  it("starts no lookup when the picker changes with no word selected", async () => {
+    const { translation } = mount();
+    word(2).click();
+    await vi.waitFor(() => expect(translation.lookup).toHaveBeenCalledOnce());
+    const select = sheet().querySelector<HTMLSelectElement>("select")!;
+    sheet().querySelector<HTMLElement>('button[aria-label="Close"]')!.click();
+    select.value = "ar";
+    select.dispatchEvent(new Event("change"));
+    expect(translation.lookup).toHaveBeenCalledOnce();
+  });
+
+  it("clears and re-sets the part highlights on a language change", async () => {
+    const verb = { infinitive: "vorstellen", wordIndexes: [0, 1], parts: ["a", "b"] };
+    mount(gappedResult, service(async (req) => withTarget(req, req.target === "en" ? { separableVerb: verb } : {})));
+    word(2).click();
+    await vi.waitFor(() => expect(hl("verb-part")).toBeGreaterThan(0));
+    pick("ar");
+    await vi.waitFor(() => expect(text(".translation")).toBe("ar:Vorstellungskraft"));
+    expect(hl("verb-part")).toBe(0);
   });
 });

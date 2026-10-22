@@ -6,7 +6,7 @@ import { button, h } from "./dom";
 import { icon } from "./icons";
 import { buildLookup } from "./lookup-request";
 import { renderOverlay, type ZoomLevel } from "./overlay";
-import { createSelection } from "./selection";
+import { createSelection, type WordSelectedEvent } from "./selection";
 import type { TranslationService } from "./translation";
 import { createWordHighlighter } from "./word-highlight";
 import { WordLookupError } from "./word-info-api";
@@ -18,6 +18,7 @@ export interface ResultViewDeps {
   speak: (text: string) => void;
   comingSoon: (label: string) => void;
   devMode: { get(): boolean; subscribe(fn: (on: boolean) => void): () => void };
+  targetLanguage: { get(): string; set(code: string): void };
   /** Build id shown in the developer debug panel. */
   build: string;
 }
@@ -69,6 +70,11 @@ export function createResultView(state: ResultViewState, deps: ResultViewDeps): 
     comingSoon: deps.comingSoon,
     onClose: () => selection.clear(),
     debug: panel.element,
+    getTarget: deps.targetLanguage.get,
+    onTargetChange: (code) => {
+      deps.targetLanguage.set(code);
+      if (lastEvent) runLookup(lastEvent);
+    },
   });
   // Targets are resolved per tap, after the overlay below exists.
   const highlighter = createWordHighlighter((id) => [
@@ -76,9 +82,11 @@ export function createResultView(state: ResultViewState, deps: ResultViewDeps): 
     ...overlay.elementsForWord(id),
   ]);
   const source = deps.translation.source ?? "unknown";
-  const selection = createSelection(result, (event) => {
+  let lastEvent: WordSelectedEvent | null = null;
+  const runLookup = (event: WordSelectedEvent) => {
+    lastEvent = event;
     const mine = ++lookupId;
-    const lookup = buildLookup(event, result);
+    const lookup = buildLookup(event, result, deps.targetLanguage.get());
     const snapshot = (outcome: LookupOutcome) =>
       buildDebugSnapshot({ build: deps.build, result, event, lookup, source, outcome });
     // Read once per tap: turning developer mode on mid-lookup shows nothing until the next tap.
@@ -120,9 +128,11 @@ export function createResultView(state: ResultViewState, deps: ResultViewDeps): 
         });
       },
     );
-  });
+  };
+  const selection = createSelection(result, runLookup);
   selection.subscribe((id) => {
     if (id === null) {
+      lastEvent = null;
       lookupId++; // a lookup still running must not reopen anything
       sheet.hide();
       highlighter.clear("sentence");

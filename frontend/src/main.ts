@@ -14,6 +14,7 @@ import { createScanningView } from "./scanning-view";
 import { clearToken, getToken, saveToken } from "./settings";
 import { speak, SPEECH_UNSUPPORTED_MESSAGE } from "./speech";
 import { comingSoonMessage, createToaster } from "./toast";
+import { getTargetLanguage, setTargetLanguage } from "./target-language";
 import { createTranslationService } from "./translation";
 import { applyUiScale, describeViewport } from "./viewport";
 
@@ -114,6 +115,7 @@ function screenFor(state: State): HTMLElement {
         speak: pronounce,
         comingSoon,
         devMode: { get: getDevMode, subscribe: subscribeDevMode },
+        targetLanguage: { get: getTargetLanguage, set: setTargetLanguage },
         build: BUILD_SHA,
       });
     case "error":
