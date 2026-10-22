@@ -125,3 +125,15 @@ def test_failure_logs_only_a_fixed_message(caplog):
         with pytest.raises(SecretUnavailable):
             get_api_key(PARAM, client)
     assert "ParameterNotFound" in caplog.text
+
+
+@pytest.mark.parametrize("wrapped", [f"{VALUE}\n", f"  {VALUE} \r\n", f"\n{VALUE}"])
+def test_value_is_stripped_and_cached_stripped(wrapped, caplog):
+    client, stub = make_client()
+    stub.add_response("get_parameter", ok_response(wrapped), EXPECTED_PARAMS)
+    with stub, caplog.at_level(logging.DEBUG):
+        assert get_api_key(PARAM, client) == VALUE
+        assert get_api_key(PARAM, client) == VALUE
+        stub.assert_no_pending_responses()
+    assert secrets._cached == VALUE
+    assert VALUE not in caplog.text

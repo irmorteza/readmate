@@ -61,4 +61,4 @@ def _fetch(param_name: str, client) -> str:
     if reason is not None:
         logger.warning("word-info api key lookup failed: %s", reason)
         raise SecretUnavailable from None
-    return value
+    return value.strip()
