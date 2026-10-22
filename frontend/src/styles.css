@@ -480,6 +480,23 @@ input[type="password"] {
   background: var(--slate-300);
   cursor: pointer;
 }
+.target-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1.5rem;
+}
+.target-select {
+  min-height: 2.75rem;
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  padding: 0 0.75rem;
+  color: var(--slate-900);
+  background: #fff;
+  border: 1px solid var(--slate-300);
+  border-radius: 0.75rem;
+}
 .sheet-header {
   display: flex;
   align-items: flex-start;

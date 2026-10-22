@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import css from "./styles.css?raw";
 import { declarations } from "./test-css";
 import type { WordInfo } from "./translation";
+import { LANGUAGES } from "./languages";
 import { createWordSheet } from "./word-sheet";
 
 const info: WordInfo = {
@@ -347,5 +348,106 @@ describe("word sheet css", () => {
   it("declares the two highlight tokens", () => {
     expect(css).toContain("--violet-600: #7c3aed");
     expect(css).toContain("--emerald-700: #047857");
+  });
+});
+
+describe("target language", () => {
+  const rich: WordInfo = {
+    ...info,
+    lemma: "anrufen",
+    article: "die",
+    plural: "Anrufe",
+    senseInContext: "sense",
+    separableVerb: { infinitive: "anrufen", wordIndexes: [0, 2], parts: ["ruft", "an"] },
+    expression: { text: "in Frage stellen", meaning: "to question", type: "idiom", wordIndexes: [1, 2], parts: ["in", "Frage"] },
+  };
+
+  function makeWith(extra: { getTarget?: () => string; onTargetChange?: (code: string) => void } = {}) {
+    const sheet = createWordSheet({ speak: vi.fn(), comingSoon: vi.fn(), onClose: vi.fn(), ...extra });
+    document.body.replaceChildren(sheet.backdrop, sheet.element);
+    return sheet;
+  }
+  const attrs = (el: Element | null) => [el?.getAttribute("lang"), el?.getAttribute("dir")];
+
+  it("renders a picker row before the header, with native names in data order", () => {
+    const { element } = makeWith();
+    const select = element.querySelector<HTMLSelectElement>('select[aria-label="Translation language"]')!;
+    const row = select.closest(".target-picker")!;
+    expect(row.textContent).toContain("Translate to");
+    expect(row.compareDocumentPosition(element.querySelector(".sheet-header")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const options = [...select.options];
+    expect(options.map((o) => o.value)).toEqual(LANGUAGES.map((l) => l.code));
+    expect(options.map((o) => o.textContent)).toEqual(LANGUAGES.map((l) => l.native));
+    options.forEach((o, i) => {
+      expect(o.lang).toBe(LANGUAGES[i].code);
+      expect(o.getAttribute("dir")).toBe(LANGUAGES[i].dir);
+    });
+  });
+
+  it("shows the stored target when opened", () => {
+    const sheet = makeWith({ getTarget: () => "fa" });
+    sheet.showLoading("x");
+    expect(sheet.element.querySelector<HTMLSelectElement>("select")!.value).toBe("fa");
+  });
+
+  it("reports a change once", () => {
+    const onTargetChange = vi.fn();
+    const sheet = makeWith({ onTargetChange });
+    const select = sheet.element.querySelector<HTMLSelectElement>("select")!;
+    select.value = "ar";
+    select.dispatchEvent(new Event("change"));
+    expect(onTargetChange).toHaveBeenCalledOnce();
+    expect(onTargetChange).toHaveBeenCalledWith("ar");
+  });
+
+  it("labels the card by language and mode", () => {
+    const sheet = makeWith();
+    sheet.show({ ...info, target: "fa" });
+    expect(text(sheet.element, ".card-soft .label")).toBe("Persian Translation");
+    sheet.show({ ...info, target: "de" });
+    expect(text(sheet.element, ".card-soft .label")).toBe("Simple German Explanation");
+    sheet.show(info);
+    expect(text(sheet.element, ".card-soft .label")).toBe("English Translation");
+  });
+
+  it("sets lang and dir for a right-to-left target and keeps German and IPA ltr", () => {
+    const sheet = makeWith();
+    sheet.show({ ...rich, target: "fa", translation: "ترجمه", senseInContext: "توضیح", exampleTranslation: "مثال" });
+    const el = sheet.element;
+    for (const sel of [".translation", ".sense", ".example-en"]) expect(attrs(el.querySelector(sel))).toEqual(["fa", "rtl"]);
+    expect(text(el, ".example-en")).toBe("مثال");
+    const german = [
+      ".sheet-word", ".example-de", ".lemma-line", ".noun-line",
+      ".card-separable strong", ".card-separable .parts", ".card-expression .parts", ".card-expression strong",
+    ];
+    for (const sel of german) expect(attrs(el.querySelector(sel)), sel).toEqual(["de", "ltr"]);
+    expect(el.querySelector(".phonetic")?.getAttribute("dir")).toBe("ltr");
+  });
+
+  it("sets the target direction on the expression meaning", () => {
+    const sheet = makeWith();
+    sheet.show({ ...rich, target: "ar" });
+    expect(attrs(sheet.element.querySelector(".meaning"))).toEqual(["ar", "rtl"]);
+  });
+
+  it("falls back to exampleEn tagged English when there is no exampleTranslation", () => {
+    const sheet = makeWith();
+    sheet.show({ ...info, target: "en" });
+    expect(text(sheet.element, ".example-en")).toBe(info.exampleEn);
+    expect(attrs(sheet.element.querySelector(".example-en"))).toEqual(["en", "ltr"]);
+    sheet.show({ ...info, target: "fa" });
+    expect(text(sheet.element, ".example-en")).toBe(info.exampleEn);
+    expect(attrs(sheet.element.querySelector(".example-en"))).toEqual(["en", "ltr"]);
+  });
+
+  it("renders markup literally", () => {
+    const sheet = makeWith();
+    sheet.show({ ...info, translation: "<img src=x onerror=alert(1)>" });
+    expect(text(sheet.element, ".translation")).toBe("<img src=x onerror=alert(1)>");
+    expect(sheet.element.querySelector(".translation img")).toBeNull();
+  });
+
+  it("gives the picker a touch-sized select", () => {
+    expect(declarations(".target-select")).toContain("min-height: 2.75rem");
   });
 });

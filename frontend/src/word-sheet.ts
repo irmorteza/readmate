@@ -1,5 +1,6 @@
 import { button, h } from "./dom";
 import { icon } from "./icons";
+import { DEFAULT_TARGET, LANGUAGES, languageFor } from "./languages";
 import { createModalFocus } from "./modal-focus";
 import type { WordInfo } from "./translation";
 
@@ -9,6 +10,9 @@ export interface WordSheetDeps {
   onClose(): void;
   /** Optional developer debug panel, mounted as the last child of the sheet body. */
   debug?: HTMLElement;
+  /** The stored translation language; read whenever the sheet opens. */
+  getTarget?: () => string;
+  onTargetChange?: (code: string) => void;
 }
 
 export interface WordSheet {
@@ -29,12 +33,18 @@ function action(text: string, iconName: Parameters<typeof icon>[0], cls: string,
   return el;
 }
 
+const setLang = (el: Element, code: string, dir: string) => {
+  el.setAttribute("lang", code);
+  el.setAttribute("dir", dir);
+};
+
 export function createWordSheet(deps: WordSheetDeps): WordSheet {
+  const getTarget = deps.getTarget ?? (() => DEFAULT_TARGET);
   let currentWord = "";
   let currentExample = "";
 
   const wordEl = h("h2", { class: "sheet-word" });
-  const phoneticEl = h("span", { class: "phonetic" });
+  const phoneticEl = h("span", { class: "phonetic", attrs: { dir: "ltr" } });
   const posEl = h("span", { class: "pos" });
   const translationEl = h("p", { class: "translation" });
   const senseEl = h("p", { class: "sense", hidden: true });
@@ -43,6 +53,7 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
   const swatch = (kind: string) => h("span", { class: `swatch swatch-${kind}`, attrs: { "aria-hidden": "true" } });
   const verbInfinitiveEl = h("strong");
   const verbPartsEl = h("span", { class: "parts" });
+  const german = [wordEl, verbInfinitiveEl, verbPartsEl];
   const verbCard = h(
     "div",
     { class: "card-separable", hidden: true },
@@ -62,6 +73,7 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
     expressionMeaningEl,
     h("p", { class: "parts-row" }, swatch("collocation"), expressionPartsEl),
   );
+  german.push(expressionTextEl, expressionPartsEl);
   const extras = [senseEl, lemmaEl, nounEl, verbCard, expressionCard];
   const hideExtras = () => {
     for (const el of extras) el.hidden = true;
@@ -72,6 +84,23 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
   };
   const exampleDeEl = h("p", { class: "example-de" });
   const exampleEnEl = h("p", { class: "example-en" });
+  german.push(lemmaEl, nounEl, exampleDeEl);
+  for (const el of german) setLang(el, "de", "ltr");
+
+  const cardLabelEl = label("English Translation");
+  const setCardLabel = (code: string | undefined) => {
+    const lang = languageFor(code);
+    cardLabelEl.textContent = `${lang.english} ${lang.mode === "explain" ? "Explanation" : "Translation"}`;
+  };
+  const targetSelect = h("select", {
+    class: "target-select",
+    onchange: () => deps.onTargetChange?.(targetSelect.value),
+    attrs: { "aria-label": "Translation language" },
+  });
+  for (const l of LANGUAGES) {
+    targetSelect.append(h("option", { value: l.code, textContent: l.native, lang: l.code, dir: l.dir }));
+  }
+  const targetPicker = h("div", { class: "target-picker" }, h("span", { class: "label", textContent: "Translate to" }), targetSelect);
 
   const speaker = (aria: string, name: "volume-2" | "volume-1", onClick: () => void) => {
     const el = h("button", {
@@ -97,6 +126,7 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
     "div",
     { class: "sheet", hidden: true, attrs: { role: "dialog", "aria-modal": "true", "aria-label": "Word details" } },
     h("div", { class: "handle", onclick: deps.onClose }),
+    targetPicker,
     h(
       "div",
       { class: "sheet-header" },
@@ -116,7 +146,7 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
     h(
       "div",
       { class: "sheet-body" },
-      h("div", { class: "card-soft" }, label("English Translation"), translationEl, senseEl),
+      h("div", { class: "card-soft" }, cardLabelEl, translationEl, senseEl),
       lemmaEl,
       nounEl,
       verbCard,
@@ -168,6 +198,9 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
     showLoading(word) {
       currentWord = word;
       currentExample = "";
+      const target = getTarget();
+      targetSelect.value = target;
+      setCardLabel(target);
       wordEl.textContent = word;
       phoneticEl.textContent = "…";
       posEl.textContent = "";
@@ -180,6 +213,9 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
     show(info) {
       currentWord = info.word;
       currentExample = info.exampleDe;
+      const lang = languageFor(info.target);
+      setCardLabel(info.target);
+      for (const el of [translationEl, senseEl, expressionMeaningEl]) setLang(el, lang.code, lang.dir);
       wordEl.textContent = info.word;
       phoneticEl.textContent = info.phonetic;
       posEl.textContent = info.pos;
@@ -201,7 +237,10 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
       expressionTypeEl.textContent = expression?.type ?? "";
       expressionPartsEl.textContent = expression?.parts.join(" … ") ?? "";
       exampleDeEl.textContent = info.exampleDe;
-      exampleEnEl.textContent = info.exampleEn;
+      const translated = info.exampleTranslation;
+      const exampleLang = translated === undefined ? languageFor("en") : lang;
+      setLang(exampleEnEl, exampleLang.code, exampleLang.dir);
+      exampleEnEl.textContent = translated ?? info.exampleEn;
     },
     showUnavailable(message = "Translation unavailable") {
       currentExample = "";
