@@ -61,7 +61,8 @@ def test_request_parameters():
         "effort": "low",
         "format": {"type": "json_schema", "schema": {"type": "object"}},
     }
-    assert kw["timeout"] == 8.0
+    assert isinstance(kw["timeout"], anthropic.Timeout)
+    assert kw["timeout"].read == 8.0 and kw["timeout"].connect == 2.0
     assert not {"temperature", "top_p", "top_k", "thinking", "tools", "tool_choice"} & kw.keys()
     assert r == EngineReply('{"a":1}', "end_turn", 900, 300)
 

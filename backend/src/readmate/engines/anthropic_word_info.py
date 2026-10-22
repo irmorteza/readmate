@@ -7,6 +7,8 @@ import anthropic
 from readmate.engines.base import EngineError, EngineReply
 from readmate.wordinfo.secrets import SecretUnavailable, get_api_key
 
+CONNECT_TIMEOUT_S = 2.0
+
 
 class AnthropicWordInfoEngine:
     name = "anthropic"
@@ -19,7 +21,7 @@ class AnthropicWordInfoEngine:
             client = anthropic.Anthropic(
                 api_key=api_key,
                 max_retries=0,
-                timeout=anthropic.Timeout(8.0, connect=2.0),
+                timeout=anthropic.Timeout(8.0, connect=CONNECT_TIMEOUT_S),
             )
         self._client = client
 
@@ -41,7 +43,7 @@ class AnthropicWordInfoEngine:
                     "effort": self.effort,
                     "format": {"type": "json_schema", "schema": schema},
                 },
-                timeout=timeout_s,
+                timeout=anthropic.Timeout(timeout_s, connect=CONNECT_TIMEOUT_S),
             )
         except anthropic.APIConnectionError as e:
             raise EngineError("transient", _detail(e)) from None
