@@ -180,7 +180,7 @@ The service adds `version` and `word`, maps `""` to `null` for `article` and `pl
 - **Normalization (output stays valid):** indexes are sorted. A group that does not contain `wordIndex` is replaced by `null` (logged as `group_dropped`), because it describes a different word. `article` / `plural` are set to `null` when `pos ≠ noun`.
 - Invalid output raises `InvalidModelOutput`. It is never cached, and it is retryable once (§5.6).
 
-### 5.5 Prompt (`PROMPT_VERSION = "wi-1"`)
+### 5.5 Prompt (`PROMPT_VERSION = "wi-2"`; was `wi-1`)
 
 The **system prompt** (fixed text, English) says:
 
@@ -197,6 +197,7 @@ The **user message** is a fixed template with the data inside delimiters:
 ```
 <kind>sentence</kind>
 <tapped_index>1</tapped_index>
+<tapped_word>stellte</tapped_word>
 <words>
 0 Sie
 1 stellte
@@ -204,11 +205,13 @@ The **user message** is a fixed template with the data inside delimiters:
 </words>
 ```
 
+**Amendment 2026-10-22 (`wi-2`):** the user message also carries the tapped word's text in `<tapped_word>`, escaped like the words (`<` and `>` replaced), and the system prompt says to describe exactly the word at that index, even when it belongs to a predicate with a verb. Reason: for "Das Wasser ist klar." with the tapped word "klar." the model answered with the lemma "sein".
+
 A guard test pins `sha256(system prompt + json(MODEL_OUTPUT_SCHEMA) + user template)` next to `PROMPT_VERSION`. Changing any of them without bumping the version fails the test, so stale cache entries can never be served for a new prompt.
 
 ### 5.6 Timeouts, retry, deadline
 
-- Lambda timeout: 15 s (unchanged). SDK client: `max_retries=0`, connect timeout 2 s, read timeout 8 s (exact SDK option names are confirmed against 1.15.0 in Plan A).
+- Lambda timeout: **30 s** (was 15 s; amended 2026-10-22 after the probe, §15), memory 1024 MB. SDK client: `max_retries=0`, connect timeout 2 s, read timeout 8 s (exact SDK option names are confirmed against 1.15.0 in Plan A).
 - At most **2 engine calls** per request: the first, plus one retry on a connection error, 429, 5xx/529, read timeout or `InvalidModelOutput`. **The retry is skipped unless `context.get_remaining_time_in_millis() ≥ 9_500`**, so a request can never run into the Lambda timeout. In practice only fast failures are retried. 400/401/403 from Anthropic are not retried (configuration error → 502, logged at ERROR).
 - Each engine call first reserves one unit of the daily counter (§6.3); a retry costs a second unit.
 
@@ -357,6 +360,10 @@ Invoke-RestMethod -Method Post -Uri "${url}v1/word-info" -ContentType applicatio
 
 If step 2 lands before step 1, OCR still works and word-info answers 503.
 
+### 8.2a Amendment 2026-10-22: function sizing
+
+`OcrFunction` has `Timeout: 30` (was 15) and `MemorySize: 1024` (was 512). A cold first word-info lookup took 14.66 s against the old timeout. The per-call read timeout (8 s) and the deadline-aware retry (§5.6) are unchanged.
+
 ## 9. Local development and tests without the API
 
 - **`FakeWordInfoEngine`** returns a canned model-output JSON. It has a small table keyed by lowercase word (`stellte` → separable `vorstellen` using the index of the last word starting with `vor`; `verfügung` → expression `zur Verfügung stellen`; `angst` → `Angst haben`) and a generic fallback for any other word. Its output goes through the real validation.
@@ -395,7 +402,7 @@ If step 2 lands before step 1, OCR still works and word-info answers 503.
 ### 10.3 Service (`word-info-api.ts`, `translation.ts`)
 
 - `postWordInfo(request, token, signal)`:
-  - `POST ${VITE_API_URL}/v1/word-info`, 18 s client timeout.
+  - `POST ${VITE_API_URL}/v1/word-info`, **35 000 ms** client timeout (was 18 000 ms; amended 2026-10-22 to match the 30 s Lambda timeout; Plan B is executed with this override).
   - Status mapping: 401 → `unauthorized`, 429 with `DAILY_LIMIT` → new `ErrorKind` `limit`, other 429 → `busy`, everything else → `unavailable`.
   - A response failing the guard → `unavailable`.
 - `TranslationService.lookup(request: LookupRequest)` replaces `(word, context)`. `WordInfo` gains optional `lemma`, `senseInContext`, `article`, `plural`, `separableVerb`, `expression` and `meta`.
@@ -496,3 +503,11 @@ A workspace spend limit of **$10/month** stops the theoretical worst case. The p
 - The first request with a new schema pays a one-time grammar compilation latency, cached by Anthropic for 24 h.
 - Cold start on the first word-info request includes the SDK import and the SSM read (estimate 0.5–1 s).
 - The account Lambda concurrency limit (10) is shared with OCR; long model calls hold slots. This is acceptable for the pilot.
+
+## 15. Probe results 2026-10-22
+
+First real probe run against the deployed API (prompt `wi-1`):
+
+- 11 model calls, 0 `max_tokens` stops, median 187 output tokens.
+- Warm cache misses took 1.3–4.4 s; the cold first call took 14.7 s (hence the 30 s timeout and 1024 MB, §8.2a).
+- One wrong-word answer: tapping "klar." in "Das Wasser ist klar." returned the lemma "sein". Fixed by `wi-2` (§5.5); the probe has a new case "adjective after a verb" for it.
