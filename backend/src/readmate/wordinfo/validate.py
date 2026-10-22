@@ -43,6 +43,10 @@ def _string(obj: dict, key: str, *, required: bool, limit_key: str | None = None
     value = obj[key]
     if not isinstance(value, str):
         raise InvalidModelOutput(f"{key} is not a string")
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        raise InvalidModelOutput(f"{key} is not valid text") from None
     value = value.strip()
     if required and not value:
         raise InvalidModelOutput(f"{key} is empty")

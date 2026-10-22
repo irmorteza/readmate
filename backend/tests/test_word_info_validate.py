@@ -231,3 +231,28 @@ def test_input_not_mutated_and_limits_pinned():
         "exampleDe": 200, "exampleEn": 200, "plural": 64, "infinitive": 64,
         "text": 120, "meaning": 200,
     }  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda o: o.__setitem__("lemma", "x\ud800"),
+        lambda o: o.__setitem__("translation", "\udc00y"),
+        lambda o: o["separableVerb"].__setitem__("infinitive", "vor\ud800"),
+        lambda o: o.__setitem__(
+            "expression",
+            {"text": "a\ud800", "meaning": "m", "type": "idiom", "wordIndexes": [1, 2]},
+        ),
+        lambda o: o.__setitem__(
+            "expression",
+            {"text": "a", "meaning": "m\ud800", "type": "idiom", "wordIndexes": [1, 2]},
+        ),
+    ],
+)
+def test_lone_surrogate_is_rejected_without_model_text(mutate):
+    o = good()
+    mutate(o)
+    with pytest.raises(InvalidModelOutput) as exc:
+        validate_model_output(json.dumps(o), "end_turn", REQ)
+    assert "\ud800" not in exc.value.reason and "\udc00" not in exc.value.reason
+    assert "is not valid text" in exc.value.reason
