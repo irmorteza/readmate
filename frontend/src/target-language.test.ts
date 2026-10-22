@@ -39,3 +39,11 @@ it("falls back to memory when storage throws", () => {
   expect(() => setTargetLanguage("ar")).not.toThrow();
   expect(getTargetLanguage()).toBe("ar");
 });
+
+it("keeps the chosen language when only the save fails", () => {
+  vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+    throw new Error("quota");
+  });
+  setTargetLanguage("fa");
+  expect(getTargetLanguage()).toBe("fa");
+});

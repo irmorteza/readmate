@@ -451,3 +451,27 @@ describe("target language", () => {
     expect(declarations(".target-select")).toContain("min-height: 2.75rem");
   });
 });
+
+describe("language of placeholder and error text", () => {
+  const attrs = (el: Element | null) => [el?.getAttribute("lang"), el?.getAttribute("dir")];
+  const persian: WordInfo = { ...info, target: "fa", translation: "ترجمه", exampleTranslation: "مثال" };
+  function open() {
+    const sheet = createWordSheet({ speak: vi.fn(), comingSoon: vi.fn(), onClose: vi.fn() });
+    document.body.replaceChildren(sheet.backdrop, sheet.element);
+    sheet.show(persian);
+    return sheet;
+  }
+
+  it("renders an error in the UI language after a Persian answer", () => {
+    const sheet = open();
+    sheet.showUnavailable();
+    expect(attrs(sheet.element.querySelector(".translation"))).toEqual(["en", "ltr"]);
+    expect(attrs(sheet.element.querySelector(".example-en"))).toEqual(["en", "ltr"]);
+  });
+
+  it("renders the loading placeholder in the UI language after a Persian answer", () => {
+    const sheet = open();
+    sheet.showLoading("x");
+    expect(attrs(sheet.element.querySelector(".translation"))).toEqual(["en", "ltr"]);
+  });
+});

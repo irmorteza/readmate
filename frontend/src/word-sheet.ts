@@ -204,6 +204,8 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
       wordEl.textContent = word;
       phoneticEl.textContent = "…";
       posEl.textContent = "";
+      setLang(translationEl, "en", "ltr");
+      setLang(exampleEnEl, "en", "ltr");
       translationEl.textContent = "…";
       hideExtras();
       exampleDeEl.textContent = "…";
@@ -247,6 +249,8 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
       phoneticEl.textContent = "";
       posEl.textContent = "";
       hideExtras();
+      setLang(translationEl, "en", "ltr");
+      setLang(exampleEnEl, "en", "ltr");
       translationEl.textContent = message;
       exampleDeEl.textContent = "";
       exampleEnEl.textContent = "";
