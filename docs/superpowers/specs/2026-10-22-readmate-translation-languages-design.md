@@ -138,7 +138,12 @@ One schema for all targets: today's eleven properties plus `exampleTranslation` 
 - **Target language:** write `translation`, `senseInContext`, `expression.meaning` and `exampleTranslation` in the target language from `<target_language>`. `exampleEn` is always English. `lemma`, `phonetic`, `exampleDe`, `infinitive` and `expression.text` stay German or IPA. German words quoted inside target-language text keep their German spelling.
 - **Mode `explain` (simple German):** `translation` is a short explanation in simple German (A2 level, at most 10 words), not the word itself and not a word of the same family. `senseInContext` is one simple-German sentence. `expression.meaning` is a simple-German explanation. `exampleTranslation` rewrites `exampleDe` in simpler German words; **repeat `exampleDe` only if it is already as simple as it can be**.
 - **Backlog fix 1, no duplicate expression:** the separable verb belongs in `separableVerb` only. Do not return an expression that consists only of the separable verb's parts, or of those parts plus the verb's objects or other arguments (for example, `jemanden jemandem vorstellen` is not an expression). Return an expression only for a fixed multi-word unit such as a collocation, idiom or prepositional pattern that has its own meaning.
-- **Backlog fix 2, the particle tapped:** when the tapped word is the separable particle (for example `an.` in *Er rief … seine Schwester an.*), describe the separable verb. `lemma` is the infinitive with the particle (`anrufen`), `pos` is `verb`, `separableVerb` is filled, and `phonetic` is still the tapped word as written.
+- **Backlog fix 2, the particle tapped:** when the tapped word is the separable particle (for example `zu.` in *Sie macht das Fenster zu.*), describe the separable verb. `lemma` is the infinitive with the particle (`zumachen`), `pos` is `verb`, `separableVerb` is filled, and `phonetic` is still the tapped word as written.
+- **Worked examples are never probe sentences** (owner's change, 2026-10-22). Otherwise the probe would measure whether the model recalls the prompt, not whether it follows the rule.
+  - The wi-2 example *Das Wasser ist klar.* / `klar.` becomes *Die Suppe ist heiß.* / `heiß.` (describe the adjective `heiß`, not the verb `sein`).
+  - The particle example is *Sie macht das Fenster zu.* / `zu.` (`zumachen`).
+  - `jemanden jemandem vorstellen` stays as the named negative pattern; it is a pattern, not a probe sentence.
+  - A test checks that no probe case sentence (its words joined with spaces) appears verbatim in `SYSTEM_PROMPT`.
 - The existing rules (untrusted data, describe exactly the tapped word, kinds, compounds, index rules, field limits) are unchanged. "English gloss" and "English sentence" in the field rules become "in the target language".
 
 ### 5.4 Server-side normalizations (`validate.py`)
@@ -256,7 +261,7 @@ No AWS, IAM, SSM or bootstrap change. No owner command is needed beyond the push
 
 - Languages: the loader, `by_code`, the sync tests and the script's rejection cases (§3.2).
 - Request: every listed code accepted; an unknown code, a wrong-case code (`FA`) and a non-string rejected.
-- Prompt: the `<target_language>` line for `en`, `fa` and `de` (name, code and mode from the data); the version and hash pin; the schema has `exampleTranslation` and still exactly 2 `anyOf`.
+- Prompt: the `<target_language>` line for `en`, `fa` and `de` (name, code and mode from the data); the version and hash pin; the schema has `exampleTranslation` and still exactly 2 `anyOf`; no probe case sentence appears in `SYSTEM_PROMPT`.
 - Validate: `exampleTranslation` is required, non-empty and capped; for `en` it equals `exampleEn`; for `fa` it is kept; expression dropped when it is a subset of the separable verb and kept when it has an extra word; lemma set to the infinitive when `separableVerb` is present.
 - Fake engine: `exampleTranslation` for each target kind; RTL samples for `fa` and `ar`.
 - Cache key: it differs by target (extended with `fa`). Changing one language's `english` name, or its `mode`, changes the key for that target and leaves the keys of every other target unchanged. Adding an entry changes no existing key.
