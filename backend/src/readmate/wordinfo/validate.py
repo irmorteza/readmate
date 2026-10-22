@@ -136,6 +136,9 @@ def validate_model_output(text: str, stop_reason: str, req: WordInfoRequest) -> 
     sense = _string(data, "senseInContext", required=True)
     example_de = _string(data, "exampleDe", required=True)
     example_en = _string(data, "exampleEn", required=True)
+    if req.target == "en":
+        # English has no separate translation: the model's field is ignored, even when invalid.
+        data = {**data, "exampleTranslation": example_en}
     example_translation = _string(data, "exampleTranslation", required=True)
     separable = _separable(data["separableVerb"], req)
     expression = _expression(data["expression"], req)
@@ -162,7 +165,7 @@ def validate_model_output(text: str, stop_reason: str, req: WordInfoRequest) -> 
         "plural": (plural or None) if is_noun else None,
         "exampleDe": example_de,
         "exampleEn": example_en,
-        "exampleTranslation": example_en if req.target == "en" else example_translation,
+        "exampleTranslation": example_translation,
         "separableVerb": separable,
         "expression": expression,
     }

@@ -147,9 +147,6 @@ def _expr(**kw):
         lambda o: o.update(plural="x" * 65),
         lambda o: o.update(exampleDe="x" * 201),
         lambda o: o.update(exampleEn=""),
-        lambda o: o.update(exampleTranslation=""),
-        lambda o: o.update(exampleTranslation="x" * 201),
-        lambda o: o.update(exampleTranslation=5),
         lambda o: o.pop("exampleTranslation"),
         lambda o: o.update(phonetic=None),
         lambda o: o.update(separableVerb={"infinitive": "  ", "wordIndexes": [1, 5]}),
@@ -312,3 +309,26 @@ def test_lemma_not_overridden_when_separable_group_dropped():
     o["separableVerb"]["wordIndexes"] = [2, 3]
     out = run(o)
     assert out["separableVerb"] is None and out["lemma"] == "stellen"
+
+
+@pytest.mark.parametrize("bad", ["", "   ", "x" * 201, 5, None])
+def test_invalid_example_translation_is_rejected_for_other_targets(bad):
+    o = good()
+    o["exampleTranslation"] = bad
+    with pytest.raises(InvalidModelOutput):
+        validate_model_output(json.dumps(o), "end_turn", replace(REQ, target="fa"))
+
+
+@pytest.mark.parametrize("bad", ["", "   ", "x" * 201, 5, None])
+def test_invalid_example_translation_never_fails_an_english_answer(bad):
+    o = good()
+    o["exampleTranslation"] = bad
+    out = run(o)
+    assert out["exampleTranslation"] == out["exampleEn"]
+
+
+def test_english_answer_still_needs_the_example_translation_key():
+    o = good()
+    del o["exampleTranslation"]
+    with pytest.raises(InvalidModelOutput):
+        run(o)

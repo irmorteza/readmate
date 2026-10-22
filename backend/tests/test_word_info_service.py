@@ -423,3 +423,13 @@ def test_cache_hit_returns_current_request_word_and_leaves_cache_untouched():
     out2 = fresh.lookup(plain, ms())  # store hit
     assert out2["word"] == "vor" and store.get(key) == stored
     assert len(engine.calls) == 1
+
+
+@pytest.mark.parametrize("bad", ["", "x" * 201])
+def test_invalid_example_translation_for_en_is_still_a_200_on_the_first_attempt(bad):
+    body = json.loads(GOOD_TEXT)
+    body["exampleTranslation"] = bad
+    svc, engine, _ = make([EngineReply(json.dumps(body), "end_turn", 5, 10)])
+    out = svc.lookup(REQ, ms())
+    assert len(engine.calls) == 1
+    assert out["exampleTranslation"] == out["exampleEn"] == "The house is big."
