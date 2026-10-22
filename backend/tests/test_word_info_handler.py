@@ -182,3 +182,12 @@ def test_lone_surrogate_in_body_is_400_not_500():
     event["body"] = '{"word":"\ud800"}'
     status, body = call(event)
     assert status == 400 and body["error"]["code"] == "BAD_REQUEST"
+
+
+def test_word_info_success_and_error_responses_declare_utf8_json():
+    ok = handler(word_info_event(GOLDEN_REQUEST), None)
+    assert ok["statusCode"] == 200
+    assert ok["headers"]["content-type"] == "application/json; charset=utf-8"
+    bad = handler(word_info_event(GOLDEN_REQUEST, method="GET"), None)
+    assert bad["statusCode"] == 405
+    assert bad["headers"]["content-type"] == "application/json; charset=utf-8"

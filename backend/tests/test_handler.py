@@ -210,3 +210,13 @@ def test_wrong_token_with_oversized_body_is_401():
 
 def test_missing_token_with_none_body_is_401():
     assert_unauthorized(make_event(body=None, token=None))
+
+
+JSON_UTF8 = "application/json; charset=utf-8"
+
+
+def test_ocr_success_and_error_responses_declare_utf8_json():
+    ok = handler(make_event(), None)
+    assert ok["statusCode"] == 200 and ok["headers"]["content-type"] == JSON_UTF8
+    bad = handler(make_event(token="nope"), None)
+    assert bad["statusCode"] == 401 and bad["headers"]["content-type"] == JSON_UTF8

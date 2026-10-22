@@ -62,7 +62,7 @@ def map_error(exc: Exception) -> tuple[int, str, str]:
 def _response(status: int, payload: dict) -> dict:
     return {
         "statusCode": status,
-        "headers": {"content-type": "application/json"},
+        "headers": {"content-type": "application/json; charset=utf-8"},
         "body": json.dumps(payload, ensure_ascii=False),
     }
 
