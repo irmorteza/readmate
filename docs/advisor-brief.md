@@ -62,7 +62,7 @@ You are the **senior technical advisor** to the owner of ReadMate. Implementatio
 - Output: `sentences: [{ id, kind: "sentence" | "fragment" | "incomplete", wordIds, text }]`; every word in exactly one entry; optional in the schema, always emitted by the new backend (possibly `[]`).
 - Ends: terminal punctuation read from box `raw` (abbreviation list, single letters, 1–2 digit ordinals, dotted abbreviations), cancelled when the next word starts lowercase. Paragraph boundaries from layout: large gap (`max(1.0 u, 2 × median gap)` with ≥ 3 gaps) or short line + indented next line (local left edge, ±3 lines), never after a hyphen, never on a same-row line block.
 - Safety net: if segmentation raises → one `fragment` per line; if that raises too → `[]`. OCR never fails because of it.
-- Known limits: thresholds calibrated on one book page; multi-column reading order assumed, not verified on real data; a standalone punctuation box removed by `filter_noise` loses its sentence end (real case: book line 17 `»Sind Sie die Mutter von -?«`).
+- Known limits: thresholds calibrated on one book page; multi-column reading order assumed, not verified on real data; a standalone punctuation box removed by `filter_noise` loses its sentence end (real case: book fixture line 17, a question whose closing "?«" box was dropped).
 
 ### Frontend features added in Phase 2
 - `parseOcrResult` drops a malformed `sentences` field (warn + panel note) instead of rejecting the result.
