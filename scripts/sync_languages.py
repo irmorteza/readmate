@@ -17,6 +17,8 @@ SOURCE = "contract/languages.json"
 SCHEMA = "contract/word-info.schema.json"
 COPIES = ("backend/src/readmate/wordinfo/languages.json", "frontend/src/languages.json")
 ENTRY_KEYS = {"code", "english", "native", "dir", "mode"}
+# `english` goes into the prompt's <target_language> tag and the cache key (`|` separates fields).
+FORBIDDEN_NAME_CHARS = set('<>"|\n\r')
 CODE_RE = re.compile(r"^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$")
 TARGET_LINE = re.compile(r'^(\s*)"target": \{.*\}(,?)\s*$', re.M)
 
@@ -39,9 +41,11 @@ def check(data: object) -> None:
             raise ValueError("dir must be ltr or rtl")
         if entry["mode"] not in ("translate", "explain"):
             raise ValueError("mode must be translate or explain")
+        if any(set(entry[key]) & FORBIDDEN_NAME_CHARS for key in ("english", "native")):
+            raise ValueError("english and native must not contain < > \" | or a line break")
         codes.append(entry["code"])
-    if len(set(codes)) != len(codes):
-        raise ValueError("codes must be unique")
+    if len({code.lower() for code in codes}) != len(codes):
+        raise ValueError("codes must be unique, ignoring case")
     if data["default"] not in codes:
         raise ValueError("default must be a listed code")
 

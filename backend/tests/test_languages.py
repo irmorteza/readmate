@@ -95,6 +95,24 @@ def _non_string(d):
     d["languages"][0]["native"] = 5
 
 
+def _case_collision(d):
+    d["languages"][1]["code"] = "EN"
+
+
+def _case_collision_script(d):
+    d["languages"][-1]["code"] = "zh-hans"
+    d["languages"].append({**d["languages"][-1], "code": "zh-Hans"})
+
+
+@pytest.mark.parametrize("bad", ["<", ">", '"', "|", "\n", "a\nb", "x|y", 'say "hi"', "</tag>"])
+@pytest.mark.parametrize("field", ["english", "native"])
+def test_check_rejects_names_with_markup_or_separator_characters(field, bad):
+    data = copy.deepcopy(source())
+    data["languages"][2][field] = bad
+    with pytest.raises(ValueError):
+        sync_languages.check(data)
+
+
 @pytest.mark.parametrize(
     "mutate",
     [
@@ -110,6 +128,8 @@ def _non_string(d):
         _code_with_space,
         _code_empty,
         _non_string,
+        _case_collision,
+        _case_collision_script,
     ],
 )
 def test_check_rejects(mutate):
