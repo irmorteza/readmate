@@ -224,3 +224,128 @@ it("mounts an optional debug element as the last child of the sheet body", () =>
   const sheet = createWordSheet({ speak: vi.fn(), comingSoon: vi.fn(), onClose: vi.fn(), debug });
   expect(sheet.element.querySelector(".sheet-body")!.lastElementChild).toBe(debug);
 });
+
+describe("word sheet with word-info fields", () => {
+  const full: WordInfo = {
+    ...info,
+    word: "stellte",
+    phonetic: "/ʃtɛltə/",
+    pos: "Verb",
+    translation: "introduced",
+    lemma: "vorstellen",
+    senseInContext: "She introduced him to her mother.",
+    article: null,
+    plural: null,
+    separableVerb: { infinitive: "vorstellen", wordIndexes: [1, 5], parts: ["stellte", "vor."] },
+    expression: {
+      text: "zur Verfügung stellen",
+      meaning: "to make available",
+      type: "verb-pattern",
+      wordIndexes: [1, 3],
+      parts: ["stellte", "Verfügung"],
+    },
+  };
+  const hiddenOf = (sheet: HTMLElement) =>
+    [".sense", ".lemma-line", ".noun-line", ".card-separable", ".card-expression"].map(
+      (s) => sheet.querySelector<HTMLElement>(s)!.hidden,
+    );
+
+  it("shows every new section with its exact text", () => {
+    const { sheet } = make();
+    sheet.show(full);
+    const el = sheet.element;
+    expect(text(el, ".sense")).toBe("She introduced him to her mother.");
+    expect(text(el, ".lemma-line")).toBe("Lemma: vorstellen");
+    expect(el.querySelector<HTMLElement>(".noun-line")!.hidden).toBe(true);
+    expect(text(el, ".card-separable .label")).toBe("Separable verb");
+    expect(text(el, ".card-separable strong")).toBe("vorstellen");
+    expect(text(el, ".card-separable .parts")).toBe("stellte … vor.");
+    expect(el.querySelector(".card-separable .swatch.swatch-verb-part")).not.toBeNull();
+    expect(text(el, ".card-expression .label")).toBe("Expression");
+    expect(text(el, ".card-expression strong")).toBe("zur Verfügung stellen");
+    expect(text(el, ".card-expression .meaning")).toBe("to make available");
+    expect(text(el, ".card-expression .chip")).toBe("verb-pattern");
+    expect(text(el, ".card-expression .parts")).toBe("stellte … Verfügung");
+    expect(el.querySelector(".card-expression .swatch.swatch-collocation")).not.toBeNull();
+    expect(el.querySelector<HTMLElement>(".card-separable")!.hidden).toBe(false);
+    expect(el.querySelector<HTMLElement>(".card-expression")!.hidden).toBe(false);
+  });
+
+  it("hides every new section for a base-fields-only info", () => {
+    const { sheet } = make();
+    sheet.show(info);
+    expect(hiddenOf(sheet.element)).toEqual([true, true, true, true, true]);
+  });
+
+  it("hides the lemma line when the lemma equals the word", () => {
+    const { sheet } = make();
+    sheet.show({ ...info, lemma: info.word });
+    expect(sheet.element.querySelector<HTMLElement>(".lemma-line")!.hidden).toBe(true);
+  });
+
+  it("shows the noun line with the plural", () => {
+    const { sheet } = make();
+    sheet.show({ ...info, word: "Mutter", lemma: "Mutter", article: "die", plural: "Mütter" });
+    const line = sheet.element.querySelector<HTMLElement>(".noun-line")!;
+    expect(line.hidden).toBe(false);
+    expect(line.textContent).toBe("die Mutter · Plural: die Mütter");
+  });
+
+  it("shows the noun line without a plural part when there is none", () => {
+    const { sheet } = make();
+    sheet.show({ ...info, word: "Mutter", lemma: "Mutter", article: "die", plural: null });
+    expect(text(sheet.element, ".noun-line")).toBe("die Mutter");
+  });
+
+  it("showLoading hides all new sections again", () => {
+    const { sheet } = make();
+    sheet.show(full);
+    sheet.showLoading("x");
+    expect(hiddenOf(sheet.element)).toEqual([true, true, true, true, true]);
+  });
+
+  it("showUnavailable hides all new sections", () => {
+    const { sheet } = make();
+    sheet.show(full);
+    sheet.showUnavailable();
+    expect(hiddenOf(sheet.element)).toEqual([true, true, true, true, true]);
+  });
+
+  it("showUnavailable takes an optional message", () => {
+    const { sheet } = make();
+    sheet.showUnavailable("Daily lookup limit reached");
+    expect(text(sheet.element, ".translation")).toBe("Daily lookup limit reached");
+    sheet.showUnavailable();
+    expect(text(sheet.element, ".translation")).toBe("Translation unavailable");
+  });
+
+  it("renders markup from the API as literal text", () => {
+    const { sheet } = make();
+    const evil = "<img src=x onerror=alert(1)>";
+    sheet.show({
+      ...full,
+      translation: evil,
+      senseInContext: evil,
+      lemma: evil,
+      expression: { text: evil, meaning: evil, type: evil, wordIndexes: [0, 1], parts: [evil, evil] },
+      separableVerb: { infinitive: evil, wordIndexes: [0, 1], parts: [evil, evil] },
+    });
+    expect(sheet.element.querySelector("img")).toBeNull();
+    expect(text(sheet.element, ".translation")).toBe(evil);
+    expect(text(sheet.element, ".sense")).toBe(evil);
+    expect(text(sheet.element, ".card-expression .meaning")).toBe(evil);
+    expect(text(sheet.element, ".card-expression .parts")).toBe(`${evil} … ${evil}`);
+  });
+});
+
+describe("word sheet css", () => {
+  it("styles the swatches with the highlight colours", () => {
+    expect(declarations(".swatch-verb-part")).toContain("outline: 0.125rem solid var(--violet-600)");
+    expect(declarations(".swatch-collocation")).toContain("outline: 0.125rem dashed var(--emerald-700)");
+  });
+
+  it("declares the two highlight tokens", () => {
+    expect(css).toContain("--violet-600: #7c3aed");
+    expect(css).toContain("--emerald-700: #047857");
+  });
+});

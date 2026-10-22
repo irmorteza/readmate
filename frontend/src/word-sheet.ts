@@ -17,7 +17,7 @@ export interface WordSheet {
   backdrop: HTMLElement;
   showLoading(word: string): void;
   show(info: WordInfo): void;
-  showUnavailable(): void;
+  showUnavailable(message?: string): void;
   hide(): void;
 }
 
@@ -37,6 +37,39 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
   const phoneticEl = h("span", { class: "phonetic" });
   const posEl = h("span", { class: "pos" });
   const translationEl = h("p", { class: "translation" });
+  const senseEl = h("p", { class: "sense", hidden: true });
+  const lemmaEl = h("p", { class: "lemma-line", hidden: true });
+  const nounEl = h("p", { class: "noun-line", hidden: true });
+  const swatch = (kind: string) => h("span", { class: `swatch swatch-${kind}`, attrs: { "aria-hidden": "true" } });
+  const verbInfinitiveEl = h("strong");
+  const verbPartsEl = h("span", { class: "parts" });
+  const verbCard = h(
+    "div",
+    { class: "card-separable", hidden: true },
+    label("Separable verb"),
+    verbInfinitiveEl,
+    h("p", { class: "parts-row" }, swatch("verb-part"), verbPartsEl),
+  );
+  const expressionTextEl = h("strong");
+  const expressionMeaningEl = h("p", { class: "meaning" });
+  const expressionTypeEl = h("span", { class: "chip" });
+  const expressionPartsEl = h("span", { class: "parts" });
+  const expressionCard = h(
+    "div",
+    { class: "card-expression", hidden: true },
+    label("Expression"),
+    h("p", { class: "expression-head" }, expressionTextEl, expressionTypeEl),
+    expressionMeaningEl,
+    h("p", { class: "parts-row" }, swatch("collocation"), expressionPartsEl),
+  );
+  const extras = [senseEl, lemmaEl, nounEl, verbCard, expressionCard];
+  const hideExtras = () => {
+    for (const el of extras) el.hidden = true;
+  };
+  const fill = (el: HTMLElement, value: string | null | undefined) => {
+    el.textContent = value ?? "";
+    el.hidden = !value;
+  };
   const exampleDeEl = h("p", { class: "example-de" });
   const exampleEnEl = h("p", { class: "example-en" });
 
@@ -83,7 +116,11 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
     h(
       "div",
       { class: "sheet-body" },
-      h("div", { class: "card-soft" }, label("English Translation"), translationEl),
+      h("div", { class: "card-soft" }, label("English Translation"), translationEl, senseEl),
+      lemmaEl,
+      nounEl,
+      verbCard,
+      expressionCard,
       h(
         "div",
         {},
@@ -135,6 +172,7 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
       phoneticEl.textContent = "…";
       posEl.textContent = "";
       translationEl.textContent = "…";
+      hideExtras();
       exampleDeEl.textContent = "…";
       exampleEnEl.textContent = "";
       setVisible(true);
@@ -146,14 +184,31 @@ export function createWordSheet(deps: WordSheetDeps): WordSheet {
       phoneticEl.textContent = info.phonetic;
       posEl.textContent = info.pos;
       translationEl.textContent = info.translation;
+      fill(senseEl, info.senseInContext);
+      fill(lemmaEl, info.lemma && info.lemma !== info.word ? `Lemma: ${info.lemma}` : null);
+      if (info.article && info.lemma) {
+        const plural = info.plural ? ` · Plural: die ${info.plural}` : "";
+        fill(nounEl, `${info.article} ${info.lemma}${plural}`);
+      } else fill(nounEl, null);
+      const verb = info.separableVerb;
+      verbCard.hidden = !verb;
+      verbInfinitiveEl.textContent = verb?.infinitive ?? "";
+      verbPartsEl.textContent = verb?.parts.join(" … ") ?? "";
+      const expression = info.expression;
+      expressionCard.hidden = !expression;
+      expressionTextEl.textContent = expression?.text ?? "";
+      expressionMeaningEl.textContent = expression?.meaning ?? "";
+      expressionTypeEl.textContent = expression?.type ?? "";
+      expressionPartsEl.textContent = expression?.parts.join(" … ") ?? "";
       exampleDeEl.textContent = info.exampleDe;
       exampleEnEl.textContent = info.exampleEn;
     },
-    showUnavailable() {
+    showUnavailable(message = "Translation unavailable") {
       currentExample = "";
       phoneticEl.textContent = "";
       posEl.textContent = "";
-      translationEl.textContent = "Translation unavailable";
+      hideExtras();
+      translationEl.textContent = message;
       exampleDeEl.textContent = "";
       exampleEnEl.textContent = "";
     },

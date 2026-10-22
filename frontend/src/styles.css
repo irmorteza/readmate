@@ -16,6 +16,8 @@
   --indigo-700: #4338ca;
   --indigo-950: #1e1b4b;
   --highlight: rgba(253, 224, 71, 0.55);
+  --violet-600: #7c3aed;
+  --emerald-700: #047857;
 }
 * {
   box-sizing: border-box;
@@ -521,6 +523,60 @@ input[type="password"] {
   border: 1px solid rgba(226, 232, 240, 0.8);
   border-radius: 1rem;
   background: var(--slate-50);
+}
+.sense {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--slate-600);
+}
+.lemma-line,
+.noun-line {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--slate-600);
+}
+.card-separable,
+.card-expression {
+  padding: 0.75rem;
+  border: 1px solid var(--slate-200);
+  border-radius: 0.75rem;
+  background: var(--slate-50);
+}
+.card-separable p,
+.card-expression p {
+  margin: 0.25rem 0 0;
+}
+.card-expression .chip {
+  margin-left: 0.5rem;
+}
+.meaning {
+  font-size: 0.875rem;
+  color: var(--slate-600);
+}
+.parts-row {
+  font-size: 0.875rem;
+  color: var(--slate-800);
+}
+.swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.5rem;
+  border-radius: 0.1875rem;
+  vertical-align: middle;
+}
+.swatch-verb-part {
+  outline: 0.125rem solid var(--violet-600);
+}
+.swatch-collocation {
+  outline: 0.125rem dashed var(--emerald-700);
+}
+.sense,
+.lemma-line,
+.noun-line,
+.meaning,
+.parts {
+  overflow-wrap: anywhere;
 }
 .label {
   display: block;
