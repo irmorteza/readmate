@@ -407,6 +407,23 @@ input[type="password"] {
   border-color: var(--indigo-600);
   border-style: dashed;
 }
+/* Part highlights are always on. They use outline only, so they never fight hl-sentence or .selected. */
+.word.hl-verb-part {
+  outline: 0.125rem solid var(--violet-600);
+  outline-offset: 0.0625rem;
+}
+.word.hl-collocation {
+  outline: 0.125rem dashed var(--emerald-700);
+  outline-offset: 0.0625rem;
+}
+.box.hl-verb-part {
+  border-color: var(--violet-600);
+  border-style: solid;
+}
+.box.hl-collocation {
+  border-color: var(--emerald-700);
+  border-style: dotted;
+}
 
 /* Word sheet (UI v2): anchored inside the app container, never fixed to the window */
 .sheet-backdrop {

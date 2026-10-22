@@ -1,4 +1,4 @@
-export type HighlightStyle = "sentence"; // later: "verb-part", "collocation", …
+export type HighlightStyle = "sentence" | "verb-part" | "collocation";
 
 export interface WordHighlighter {
   /** Marks the words' elements with `hl-<style>`, replacing that style's previous words. */

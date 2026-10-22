@@ -54,3 +54,49 @@ describe("highlight CSS", () => {
     expect(declarations(".box.hl-sentence")).toContain("border-style: dashed");
   });
 });
+
+describe("independent styles", () => {
+  it("setting one style never clears another; clear(style) leaves the rest", () => {
+    const { hl, els } = setup();
+    const has = (id: number, style: string) => els.get(id)!.every((e) => e.classList.contains(`hl-${style}`));
+    hl.set("verb-part", [1, 2]);
+    hl.set("collocation", [2, 3]);
+    expect(has(2, "verb-part") && has(2, "collocation")).toBe(true);
+    hl.clear("verb-part");
+    expect(has(1, "verb-part")).toBe(false);
+    expect(has(2, "verb-part")).toBe(false);
+    expect(has(2, "collocation") && has(3, "collocation")).toBe(true);
+    hl.set("verb-part", [1]);
+    hl.clear();
+    for (const id of [1, 2, 3]) for (const style of ["verb-part", "collocation", "sentence"]) expect(has(id, style)).toBe(false);
+  });
+});
+
+describe("part highlight CSS", () => {
+  const plain = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const at = (selector: string) => plain.indexOf(`${selector} {`);
+
+  it("outlines verb parts and collocations on words", () => {
+    expect(declarations(".word.hl-verb-part")).toContain("outline: 0.125rem solid var(--violet-600)");
+    expect(declarations(".word.hl-collocation")).toContain("outline: 0.125rem dashed var(--emerald-700)");
+  });
+
+  it("colours the boxes with a solid and a dotted border", () => {
+    expect(declarations(".box.hl-verb-part")).toContain("border-style: solid");
+    expect(declarations(".box.hl-collocation")).toContain("border-style: dotted");
+  });
+
+  it("never fights hl-sentence or .selected on words", () => {
+    for (const selector of [".word.hl-verb-part", ".word.hl-collocation"]) {
+      const body = declarations(selector);
+      for (const forbidden of ["text-decoration", "box-shadow", "background"]) expect(body).not.toContain(forbidden);
+    }
+  });
+
+  it("declares the box rules after .box.hl-sentence so the part style wins", () => {
+    const sentence = at(".box.hl-sentence");
+    expect(sentence).toBeGreaterThan(-1);
+    expect(at(".box.hl-verb-part")).toBeGreaterThan(sentence);
+    expect(at(".box.hl-collocation")).toBeGreaterThan(sentence);
+  });
+});
