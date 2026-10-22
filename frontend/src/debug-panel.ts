@@ -111,7 +111,9 @@ export function createDebugPanel(deps?: { writeText?: (text: string) => Promise<
           h("pre", { textContent: JSON.stringify(lookup.request, null, 2) }),
           h("p", {
             class: "debug-context-length",
-            textContent: `Context: ${lookup.contextLength} characters (${lookup.contextSource})`,
+            textContent:
+              `Context: ${lookup.contextLength} characters (${lookup.contextSource})` +
+              (lookup.windowed ? " · windowed" : ""),
           }),
         ),
         section(

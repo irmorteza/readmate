@@ -131,3 +131,14 @@ it("a new copy attempt cancels the previous Copied timer", async () => {
     vi.useRealTimers();
   }
 });
+
+it("says when the lookup was windowed", () => {
+  const panel = createDebugPanel();
+  document.body.replaceChildren(panel.element);
+  const s = snap(sentenceResult, 9);
+  panel.render({ ...s, lookup: { ...s.lookup, windowed: true } });
+  expect(section("request").querySelector(".debug-context-length")!.textContent).toBe(
+    "Context: 21 characters (sentence) · windowed");
+  panel.render(s);
+  expect(section("request").querySelector(".debug-context-length")!.textContent).toBe("Context: 21 characters (sentence)");
+});

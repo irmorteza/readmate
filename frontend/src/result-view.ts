@@ -9,6 +9,7 @@ import { renderOverlay, type ZoomLevel } from "./overlay";
 import { createSelection } from "./selection";
 import type { TranslationService } from "./translation";
 import { createWordHighlighter } from "./word-highlight";
+import { WordLookupError } from "./word-info-api";
 import { createWordSheet } from "./word-sheet";
 
 export interface ResultViewDeps {
@@ -87,6 +88,8 @@ export function createResultView(state: ResultViewState, deps: ResultViewDeps): 
     };
 
     sheet.showLoading(event.word.text);
+    highlighter.clear("verb-part");
+    highlighter.clear("collocation");
     if (dev) {
       if (event.sentence) highlighter.set("sentence", event.sentence.wordIds);
       else highlighter.clear("sentence");
@@ -99,12 +102,22 @@ export function createResultView(state: ResultViewState, deps: ResultViewDeps): 
       (info) => {
         if (mine !== lookupId) return;
         sheet.show(info);
+        // Indexes refer to the request's (possibly windowed) words; wordIds maps them to the page.
+        const pageIds = (indexes: number[]) =>
+          indexes.map((i) => lookup.wordIds[i]).filter((id) => id !== undefined);
+        if (info.separableVerb) highlighter.set("verb-part", pageIds(info.separableVerb.wordIndexes));
+        if (info.expression) highlighter.set("collocation", pageIds(info.expression.wordIndexes));
         showDebug(okOutcome(info));
       },
       (e) => {
         if (mine !== lookupId) return;
-        sheet.showUnavailable();
-        showDebug({ status: "error", error: e instanceof Error ? e.message : String(e) });
+        sheet.showUnavailable(
+          e instanceof WordLookupError && e.kind === "limit" ? "Daily lookup limit reached" : undefined,
+        );
+        showDebug({
+          status: "error",
+          error: e instanceof WordLookupError ? e.kind : e instanceof Error ? e.message : String(e),
+        });
       },
     );
   });
@@ -113,6 +126,8 @@ export function createResultView(state: ResultViewState, deps: ResultViewDeps): 
       lookupId++; // a lookup still running must not reopen anything
       sheet.hide();
       highlighter.clear("sentence");
+      highlighter.clear("verb-part");
+      highlighter.clear("collocation");
       panel.clear();
     }
     for (const [wordId, span] of wordSpans) span.classList.toggle("selected", wordId === id);

@@ -1,11 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import example from "../../contract/word-info.example.json";
 import { parseOcrResult } from "./contract";
 import { setClipboard } from "./debug-test-helpers";
 import { createResultView } from "./result-view";
 import { clearToken, saveToken } from "./settings";
 import { declarations } from "./test-css";
 import { emptyResult, gappedResult, sentenceResult } from "./test-fixtures";
-import type { TranslationService, WordInfo } from "./translation";
+import { createApiTranslationService, type TranslationService, type WordInfo } from "./translation";
+import { WordLookupError } from "./word-info-api";
+import type { WordInfoRequest } from "./word-info-contract";
 
 const info = (word: string): WordInfo => ({
   word,
@@ -536,5 +539,191 @@ describe("review fixes", () => {
     };
     for (let i = 0; i < 20; i++) mount(sentenceResult, service(), {}, counted as never);
     expect(count).toBeLessThanOrEqual(3);
+  });
+});
+
+describe("part highlights", () => {
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+  const hl = (style: string) =>
+    [...document.querySelectorAll<HTMLElement>(`.word.hl-${style}`)].map((e) => Number(e.dataset.wordId));
+  const hlBoxes = (style: string) =>
+    [...document.querySelectorAll<HTMLElement>(`.box.hl-${style}`)]
+      .map((e) => Number(e.dataset.boxId))
+      .sort((a, b) => a - b);
+  const panel = () => document.querySelector<HTMLDetailsElement>("details.debug")!;
+
+  const verb = (wordIndexes: number[]) => ({
+    infinitive: "vorstellen",
+    wordIndexes,
+    parts: wordIndexes.map(String),
+  });
+  const expr = (wordIndexes: number[]) => ({
+    text: "zur Verfügung stellen",
+    meaning: "to make available",
+    type: "verb-pattern",
+    wordIndexes,
+    parts: wordIndexes.map(String),
+  });
+  const withGroups = (word: string, groups: Partial<WordInfo>): WordInfo => ({ ...info(word), ...groups });
+
+  /** 150 one-word-per-box sentence; ids are 200+index so ids never equal indexes. */
+  function longResult() {
+    const texts = Array.from({ length: 150 }, (_, i) => `w${i}`);
+    const words = texts.map((text, i) => ({ id: 200 + i, text, boxIds: [200 + i], lineIds: [1] }));
+    return {
+      version: 1 as const,
+      engine: "fake",
+      lines: [{ id: 1, text: texts.join(" "), box: { x: 0.1, y: 0.1, w: 0.8, h: 0.03 }, boxIds: words.map((w) => w.id) }],
+      boxes: words.map((w, i) => ({
+        id: w.id, raw: w.text, lineId: 1, conf: 0.99, wordId: w.id,
+        box: { x: 0.1 + (i % 50) * 0.01, y: 0.1, w: 0.01, h: 0.03 },
+      })),
+      words,
+      sentences: [{ id: 0, kind: "sentence" as const, wordIds: words.map((w) => w.id), text: texts.join(" ") }],
+    };
+  }
+
+  it("highlights the separable verb's words in the text and the image", async () => {
+    mount(gappedResult, service(async (req) => withGroups(req.word, { separableVerb: verb([0, 1]) })));
+    word(2).click();
+    await vi.waitFor(() => expect(hl("verb-part")).toEqual([2, 9]));
+    expect(hlBoxes("verb-part")).toEqual([3, 7, 12]);
+    expect(hl("collocation")).toEqual([]);
+  });
+
+  it("highlights an expression with the collocation style", async () => {
+    mount(gappedResult, service(async (req) => withGroups(req.word, { expression: expr([0, 1]) })));
+    word(2).click();
+    await vi.waitFor(() => expect(hl("collocation")).toEqual([2, 9]));
+    expect(hl("verb-part")).toEqual([]);
+  });
+
+  it("a response without groups sets no part highlight", async () => {
+    mount();
+    word(2).click();
+    await vi.waitFor(() => expect(text(".translation")).toBe("Translated Vorstellungskraft"));
+    expect(hl("verb-part")).toEqual([]);
+    expect(hl("collocation")).toEqual([]);
+  });
+
+  it("the next tap clears both styles before its own lookup resolves", async () => {
+    const pending: Array<(i: WordInfo) => void> = [];
+    mount(gappedResult, service((req) => (req.word === "war" ? new Promise<WordInfo>((r) => pending.push(r)) : Promise.resolve(withGroups(req.word, { separableVerb: verb([0, 1]), expression: expr([0, 1]) })))));
+    word(2).click();
+    await vi.waitFor(() => expect(hl("collocation")).toEqual([2, 9]));
+    word(9).click();
+    expect(hl("verb-part")).toEqual([]);
+    expect(hl("collocation")).toEqual([]);
+    expect(hlBoxes("verb-part")).toEqual([]);
+  });
+
+  it("closing the sheet clears the part highlights", async () => {
+    mount(gappedResult, service(async (req) => withGroups(req.word, { separableVerb: verb([0, 1]) })));
+    word(2).click();
+    await vi.waitFor(() => expect(hl("verb-part")).toEqual([2, 9]));
+    document.querySelector<HTMLButtonElement>('.sheet button[aria-label="Close"]')!.click();
+    expect(hl("verb-part")).toEqual([]);
+    expect(hlBoxes("verb-part")).toEqual([]);
+  });
+
+  it("a stale response with groups sets nothing after another tap", async () => {
+    const pending = new Map<string, (v: WordInfo) => void>();
+    mount(gappedResult, service((req) => new Promise<WordInfo>((r) => pending.set(req.word, r))));
+    word(2).click();
+    word(9).click();
+    pending.get("war")!(info("war"));
+    await vi.waitFor(() => expect(text(".translation")).toBe("Translated war"));
+    pending.get("Vorstellungskraft")!(withGroups("Vorstellungskraft", { separableVerb: verb([0, 1]), expression: expr([0, 1]) }));
+    await flush();
+    expect(hl("verb-part")).toEqual([]);
+    expect(hl("collocation")).toEqual([]);
+    expect(text(".sheet-word")).toBe("war");
+  });
+
+  it("a response arriving after the sheet was closed sets nothing", async () => {
+    let resolve!: (v: WordInfo) => void;
+    mount(gappedResult, service(() => new Promise<WordInfo>((r) => (resolve = r))));
+    word(2).click();
+    document.querySelector<HTMLButtonElement>('.sheet button[aria-label="Close"]')!.click();
+    resolve(withGroups("Vorstellungskraft", { separableVerb: verb([0, 1]) }));
+    await flush();
+    expect(hl("verb-part")).toEqual([]);
+  });
+
+  it("maps indexes of a windowed lookup through the window's word ids", async () => {
+    let sent!: WordInfoRequest;
+    mount(longResult(), service(async (req) => {
+      sent = req;
+      return withGroups(req.word, { separableVerb: verb([0, 1]) });
+    }));
+    word(340).click();
+    await vi.waitFor(() => expect(hl("verb-part")).toHaveLength(2));
+    expect(sent.sentence.kind).toBe("incomplete");
+    const idOf = (text: string) => 200 + Number(text.slice(1));
+    expect(hl("verb-part")).toEqual([idOf(sent.sentence.words[0]), idOf(sent.sentence.words[1])]);
+    expect(hl("verb-part")).not.toContain(200);
+  });
+
+  it("shows 'Daily lookup limit reached' for a limit failure and the generic message otherwise", async () => {
+    mount(gappedResult, service(async () => { throw new WordLookupError("limit"); }));
+    word(9).click();
+    await vi.waitFor(() => expect(text(".translation")).toBe("Daily lookup limit reached"));
+    mount(gappedResult, service(async () => { throw new WordLookupError("busy"); }));
+    word(9).click();
+    await vi.waitFor(() => expect(text(".translation")).toBe("Translation unavailable"));
+    mount(gappedResult, service(async () => { throw new Error("x"); }));
+    word(9).click();
+    await vi.waitFor(() => expect(text(".translation")).toBe("Translation unavailable"));
+  });
+
+  it("records a lookup failure's kind in the debug panel", async () => {
+    mount(sentenceResult, service(async () => { throw new WordLookupError("busy"); }), {}, fakeDevMode(true));
+    word(9).click();
+    await flush();
+    expect(panel().querySelector('[data-debug="result"]')!.textContent).toContain("busy");
+  });
+
+  it("turning developer mode off keeps the part highlights", async () => {
+    const dev = fakeDevMode(true);
+    mount(sentenceResult, service(async (req) => withGroups(req.word, { separableVerb: verb([0, 1]) })), {}, dev);
+    word(9).click();
+    await vi.waitFor(() => expect(hl("verb-part")).toEqual([2, 9]));
+    dev.set(false);
+    expect(hl("verb-part")).toEqual([2, 9]);
+    expect(hl("sentence")).toEqual([]);
+  });
+
+  it("a tap on a highlighted neighbour selects that neighbour", async () => {
+    const { translation } = mount(sentenceResult, service(async (req) => withGroups(req.word, { separableVerb: verb([0, 1]) })));
+    word(9).click();
+    await vi.waitFor(() => expect(hl("verb-part")).toEqual([2, 9]));
+    word(2).click();
+    expect(word(2).classList.contains("selected")).toBe(true);
+    expect(translation.lookup).toHaveBeenLastCalledWith(expect.objectContaining({ word: "Vorstellungskraft" }));
+  });
+
+  it("the real API service keeps the token out of the DOM and the copied JSON", async () => {
+    const body = structuredClone(example.response) as Record<string, any>;
+    body.separableVerb = { infinitive: "vorstellen", wordIndexes: [0, 1] };
+    vi.stubEnv("VITE_API_URL", "http://api.test");
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const writeText = vi.fn(async (_text: string) => {});
+    setClipboard({ writeText });
+    mount(sentenceResult, createApiTranslationService({ getToken: () => "tok-SECRET-123" }), {}, fakeDevMode(true));
+    word(9).click();
+    await vi.waitFor(() => expect(text(".translation")).toBe("to introduce"));
+    expect(fetchMock.mock.calls[0][1].headers["X-Pilot-Token"]).toBe("tok-SECRET-123");
+    panel().open = true;
+    document.querySelector<HTMLButtonElement>("button.debug-copy")!.click();
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(JSON.parse(writeText.mock.calls[0][0]).format).toBe("readmate-debug/2");
+    for (const content of [document.body.innerHTML, writeText.mock.calls[0][0]]) {
+      expect(content).not.toContain("tok-SECRET-123");
+      expect(content).not.toContain("X-Pilot-Token");
+    }
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    setClipboard(undefined);
   });
 });
