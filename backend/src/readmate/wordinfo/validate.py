@@ -15,6 +15,7 @@ LIMITS = {
     "senseInContext": 300,
     "exampleDe": 200,
     "exampleEn": 200,
+    "exampleTranslation": 200,
     "plural": 64,
     "infinitive": 64,
     "text": 120,
@@ -23,7 +24,8 @@ LIMITS = {
 
 _TOP_KEYS = {
     "lemma", "pos", "phonetic", "article", "plural", "translation",
-    "senseInContext", "exampleDe", "exampleEn", "separableVerb", "expression",
+    "senseInContext", "exampleDe", "exampleEn", "exampleTranslation", "separableVerb",
+    "expression",
 }  # fmt: skip
 _SEPARABLE_KEYS = {"infinitive", "wordIndexes"}
 _EXPRESSION_KEYS = {"text", "meaning", "type", "wordIndexes"}
@@ -134,8 +136,18 @@ def validate_model_output(text: str, stop_reason: str, req: WordInfoRequest) -> 
     sense = _string(data, "senseInContext", required=True)
     example_de = _string(data, "exampleDe", required=True)
     example_en = _string(data, "exampleEn", required=True)
+    example_translation = _string(data, "exampleTranslation", required=True)
     separable = _separable(data["separableVerb"], req)
     expression = _expression(data["expression"], req)
+    if (
+        separable
+        and expression
+        and set(expression["wordIndexes"]) <= set(separable["wordIndexes"])
+    ):
+        logger.info("group_dropped group=expression reason=separable")
+        expression = None
+    if separable:
+        lemma = separable["infinitive"]
 
     is_noun = pos == "noun"
     return {
@@ -150,6 +162,7 @@ def validate_model_output(text: str, stop_reason: str, req: WordInfoRequest) -> 
         "plural": (plural or None) if is_noun else None,
         "exampleDe": example_de,
         "exampleEn": example_en,
+        "exampleTranslation": example_en if req.target == "en" else example_translation,
         "separableVerb": separable,
         "expression": expression,
     }

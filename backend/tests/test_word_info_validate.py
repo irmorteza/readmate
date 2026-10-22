@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+from dataclasses import replace
 
 import pytest
 
@@ -27,6 +28,7 @@ def good() -> dict:
         "senseInContext": "She introduced him to her mother.",
         "exampleDe": "Darf ich Ihnen meinen Kollegen vorstellen?",
         "exampleEn": "May I introduce my colleague to you?",
+        "exampleTranslation": "May I introduce my colleague to you?",
         "separableVerb": {"infinitive": "vorstellen", "wordIndexes": [5, 1]},
         "expression": None,
     }
@@ -40,7 +42,8 @@ def test_valid_output_becomes_contract_body():
     out = run(good())
     assert list(out) == [
         "version", "word", "lemma", "pos", "phonetic", "translation", "senseInContext",
-        "article", "plural", "exampleDe", "exampleEn", "separableVerb", "expression",
+        "article", "plural", "exampleDe", "exampleEn", "exampleTranslation", "separableVerb",
+        "expression",
     ]  # fmt: skip
     assert out["version"] == 1 and out["word"] == "stellte"
     assert out["separableVerb"] == {"infinitive": "vorstellen", "wordIndexes": [1, 5]}
@@ -144,6 +147,10 @@ def _expr(**kw):
         lambda o: o.update(plural="x" * 65),
         lambda o: o.update(exampleDe="x" * 201),
         lambda o: o.update(exampleEn=""),
+        lambda o: o.update(exampleTranslation=""),
+        lambda o: o.update(exampleTranslation="x" * 201),
+        lambda o: o.update(exampleTranslation=5),
+        lambda o: o.pop("exampleTranslation"),
         lambda o: o.update(phonetic=None),
         lambda o: o.update(separableVerb={"infinitive": "  ", "wordIndexes": [1, 5]}),
         lambda o: o.update(separableVerb="vorstellen"),
@@ -228,8 +235,8 @@ def test_input_not_mutated_and_limits_pinned():
     assert o == before
     assert LIMITS == {
         "lemma": 64, "phonetic": 80, "translation": 120, "senseInContext": 300,
-        "exampleDe": 200, "exampleEn": 200, "plural": 64, "infinitive": 64,
-        "text": 120, "meaning": 200,
+        "exampleDe": 200, "exampleEn": 200, "exampleTranslation": 200, "plural": 64,
+        "infinitive": 64, "text": 120, "meaning": 200,
     }  # fmt: skip
 
 
@@ -256,3 +263,52 @@ def test_lone_surrogate_is_rejected_without_model_text(mutate):
         validate_model_output(json.dumps(o), "end_turn", REQ)
     assert "\ud800" not in exc.value.reason and "\udc00" not in exc.value.reason
     assert "is not valid text" in exc.value.reason
+
+
+def test_en_example_translation_is_exampleEn():
+    o = good()
+    o["exampleTranslation"] = "Darf ich Ihnen meinen Kollegen vorstellen?"
+    out = run(o)
+    assert out["exampleTranslation"] == out["exampleEn"]
+
+
+def test_other_target_keeps_example_translation():
+    o = good()
+    o["exampleTranslation"] = "  آیا می‌توانم همکارم را معرفی کنم؟ "
+    out = validate_model_output(json.dumps(o), "end_turn", replace(REQ, target="fa"))
+    assert out["exampleTranslation"] == "آیا می‌توانم همکارم را معرفی کنم؟"
+
+
+def test_expression_inside_separable_verb_is_dropped(caplog):
+    o = good()
+    o["expression"] = {
+        "text": "stellen vor", "meaning": "SECRET-M", "type": "verb-pattern", "wordIndexes": [5, 1]
+    }
+    with caplog.at_level(logging.INFO, logger="readmate"):
+        out = run(o)
+    assert out["expression"] is None and out["separableVerb"] is not None
+    messages = [r.getMessage() for r in caplog.records]
+    assert any("group_dropped group=expression reason=separable" in m for m in messages)
+    assert "SECRET-M" not in " ".join(messages)
+
+
+def test_expression_with_an_extra_word_is_kept():
+    o = good()
+    o["separableVerb"]["wordIndexes"] = [1, 5]
+    o["expression"] = {"text": "a b c", "meaning": "m", "type": "idiom", "wordIndexes": [1, 2, 5]}
+    out = run(o)
+    assert out["expression"]["wordIndexes"] == [1, 2, 5]
+
+
+def test_lemma_becomes_infinitive_when_separable_present():
+    o = good()
+    o["lemma"] = "an"
+    assert run(o)["lemma"] == "vorstellen"
+
+
+def test_lemma_not_overridden_when_separable_group_dropped():
+    o = good()
+    o["lemma"] = "stellen"
+    o["separableVerb"]["wordIndexes"] = [2, 3]
+    out = run(o)
+    assert out["separableVerb"] is None and out["lemma"] == "stellen"

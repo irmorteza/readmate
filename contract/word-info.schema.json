@@ -42,6 +42,7 @@
         "plural",
         "exampleDe",
         "exampleEn",
+        "exampleTranslation",
         "separableVerb",
         "expression",
         "meta"
@@ -68,12 +69,25 @@
           ]
         },
         "phonetic": { "type": "string", "maxLength": 80 },
-        "translation": { "type": "string", "minLength": 1, "maxLength": 120 },
-        "senseInContext": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "translation": {
+          "type": "string", "minLength": 1, "maxLength": 120,
+          "description": "In the target language."
+        },
+        "senseInContext": {
+          "type": "string", "minLength": 1, "maxLength": 300,
+          "description": "In the target language."
+        },
         "article": { "enum": ["der", "die", "das", null] },
         "plural": { "type": ["string", "null"], "maxLength": 64 },
         "exampleDe": { "type": "string", "minLength": 1, "maxLength": 200 },
-        "exampleEn": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "exampleEn": {
+          "type": "string", "minLength": 1, "maxLength": 200,
+          "description": "Always English."
+        },
+        "exampleTranslation": {
+          "type": "string", "minLength": 1, "maxLength": 200,
+          "description": "exampleDe in the target language; equals exampleEn when target is en."
+        },
         "separableVerb": {
           "oneOf": [
             { "type": "null" },
@@ -97,7 +111,10 @@
               "required": ["text", "meaning", "type", "wordIndexes"],
               "properties": {
                 "text": { "type": "string", "minLength": 1, "maxLength": 120 },
-                "meaning": { "type": "string", "minLength": 1, "maxLength": 200 },
+                "meaning": {
+                  "type": "string", "minLength": 1, "maxLength": 200,
+                  "description": "In the target language."
+                },
                 "type": { "enum": ["collocation", "idiom", "verb-pattern", "fixed-phrase"] },
                 "wordIndexes": { "$ref": "#/$defs/wordIndexes" }
               }

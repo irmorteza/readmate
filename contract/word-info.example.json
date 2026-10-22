@@ -27,6 +27,7 @@
     "plural": null,
     "exampleDe": "Das ist ein Beispiel.",
     "exampleEn": "This is an example.",
+    "exampleTranslation": "This is an example.",
     "separableVerb": {
       "infinitive": "vorstellen",
       "wordIndexes": [
@@ -45,7 +46,7 @@
         "end_turn"
       ],
       "outputTokens": [
-        83
+        94
       ]
     }
   }

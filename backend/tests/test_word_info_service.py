@@ -32,6 +32,7 @@ GOOD_TEXT = json.dumps(
         "senseInContext": "A building.",
         "exampleDe": "Das Haus ist groß.",
         "exampleEn": "The house is big.",
+        "exampleTranslation": "The house is big.",
         "separableVerb": None,
         "expression": None,
     }

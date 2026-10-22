@@ -8,6 +8,7 @@ from readmate.engines.base import EngineReply
 
 _PUNCT = ".,;:!?»«„“”\"'()"
 _INDEX = re.compile(r"<tapped_index>(\d+)</tapped_index>")
+_TARGET = re.compile(r'<target_language code="([^"]+)"')
 _WORDS = re.compile(r"<words>\n(.*)\n</words>", re.DOTALL)
 
 
@@ -15,13 +16,15 @@ def _clean(word: str) -> str:
     return word.strip(_PUNCT)
 
 
-def _parse(user: str) -> tuple[int, list[str]]:
+def _parse(user: str) -> tuple[str, int, list[str]]:
+    found = _TARGET.search(user)
+    target = found.group(1) if found else "en"
     index = int(_INDEX.search(user).group(1))
     words = []
     for line in _WORDS.search(user).group(1).split("\n"):
         _, _, word = line.partition(" ")
         words.append(word)
-    return index, words
+    return target, index, words
 
 
 def _base(lemma: str) -> dict:
@@ -35,12 +38,35 @@ def _base(lemma: str) -> dict:
         "senseInContext": "A fake explanation of this word.",
         "exampleDe": "Das ist ein Beispiel.",
         "exampleEn": "This is an example.",
+        "exampleTranslation": "This is an example.",
         "separableVerb": None,
         "expression": None,
     }
 
 
-def _answer(index: int, words: list[str]) -> dict:
+_RTL_SAMPLES = {
+    "fa": ("ترجمهٔ آزمایشی", "توضیح آزمایشی این واژه.", "این یک مثال است."),
+    "ar": ("ترجمة تجريبية", "شرح تجريبي لهذه الكلمة.", "هذا مثال."),
+}
+
+
+def _localize(out: dict, target: str) -> dict:
+    if target == "en":
+        return out
+    sample = _RTL_SAMPLES.get(target)
+    for field in ("translation", "senseInContext", "exampleTranslation"):
+        out[field] = f"[{target}] {out[field]}"
+    if out["expression"] is not None:
+        out["expression"]["meaning"] = f"[{target}] {out['expression']['meaning']}"
+    if sample is not None:
+        translation, sense, example = sample
+        out.update(translation=translation, senseInContext=sense, exampleTranslation=example)
+        if out["expression"] is not None:
+            out["expression"]["meaning"] = translation
+    return out
+
+
+def _answer(index: int, words: list[str], target: str = "en") -> dict:
     word = _clean(words[index])
     low = word.lower()
     lowered = [_clean(w).lower() for w in words]
@@ -88,7 +114,7 @@ def _answer(index: int, words: list[str]) -> dict:
                 "type": "collocation",
                 "wordIndexes": sorted({index, have}),
             }
-    return out
+    return _localize(out, target)
 
 
 class FakeWordInfoEngine:
@@ -112,6 +138,6 @@ class FakeWordInfoEngine:
             if isinstance(item, Exception):
                 raise item
             return item
-        index, words = _parse(user)
-        text = json.dumps(_answer(index, words), ensure_ascii=False)
+        target, index, words = _parse(user)
+        text = json.dumps(_answer(index, words, target), ensure_ascii=False)
         return EngineReply(text, "end_turn", len(user) // 4, len(text) // 4)

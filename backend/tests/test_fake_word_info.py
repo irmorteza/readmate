@@ -1,9 +1,11 @@
 import json
+import re
 
 import pytest
 
 from readmate.engines.base import EngineError, EngineReply
 from readmate.engines.fake_word_info import FakeWordInfoEngine
+from readmate.wordinfo.languages import CODES
 from readmate.wordinfo.prompt import MODEL_OUTPUT_SCHEMA, SYSTEM_PROMPT, build_user_message
 from readmate.wordinfo.request import WordInfoRequest
 from readmate.wordinfo.validate import validate_model_output
@@ -11,8 +13,8 @@ from readmate.wordinfo.validate import validate_model_output
 SIX = ("Er", "stellte", "sich", "den", "Gästen", "vor.")
 
 
-def run(words, index, engine=None):
-    req = WordInfoRequest(words[index], index, "sentence", tuple(words), "en")
+def run(words, index, engine=None, target="en"):
+    req = WordInfoRequest(words[index], index, "sentence", tuple(words), target)
     engine = engine or FakeWordInfoEngine()
     reply = engine.explain(SYSTEM_PROMPT, build_user_message(req), MODEL_OUTPUT_SCHEMA, 5.0)
     return req, reply, validate_model_output(reply.text, reply.stop_reason, req)
@@ -92,3 +94,32 @@ def test_from_env_and_identity():
     engine = FakeWordInfoEngine.from_env({}, "fake")
     assert isinstance(engine, FakeWordInfoEngine)
     assert engine.name == "fake" and engine.model == "fake"
+
+
+def test_en_output_has_example_translation():
+    _, _, out = run(SIX, 1)
+    assert out["exampleTranslation"] == "This is an example."
+    assert out["translation"] == "to introduce" and out["exampleEn"] == "This is an example."
+
+
+@pytest.mark.parametrize("target", ["fa", "ar"])
+def test_rtl_targets_return_non_latin_text(target):
+    _, _, out = run(["Ich", "habe", "Angst."], 2, target=target)
+    for field in ("translation", "senseInContext", "exampleTranslation"):
+        assert not re.search("[A-Za-z]", out[field]), field
+        assert out[field]
+    assert not re.search("[A-Za-z]", out["expression"]["meaning"])
+    assert out["exampleEn"] == "This is an example."
+
+
+def test_other_targets_are_prefixed():
+    _, _, out = run(["Ich", "habe", "Angst."], 2, target="tr")
+    assert out["translation"] == "[tr] fear"
+    assert out["expression"]["meaning"] == "[tr] to be afraid"
+    assert out["exampleTranslation"] == "[tr] This is an example."
+
+
+def test_every_target_output_validates():
+    for code in CODES:
+        for words, index in ((SIX, 1), (["Ich", "habe", "Angst."], 2), (["Das", "Haus"], 1)):
+            run(words, index, target=code)

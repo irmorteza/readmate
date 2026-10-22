@@ -8,6 +8,7 @@ from tests.helpers import GOLDEN_REQUEST, TOKEN, call, word_info_event
 
 from readmate import handler as handler_module
 from readmate.engines.fake_word_info import FakeWordInfoEngine
+from readmate.wordinfo.languages import CODES
 from readmate.wordinfo.request import parse_request
 from readmate.wordinfo.service import WordInfoError, WordInfoService
 from readmate.wordinfo.store import MemoryStore
@@ -82,3 +83,17 @@ def test_request_schema_rejects_bad_target():
     bad = {**GOLDEN_REQUEST, "target": "xx"}
     with pytest.raises(jsonschema.ValidationError):
         validate(bad, "request")
+
+
+def test_response_without_example_translation_fails_schema():
+    out = lookup_golden()
+    del out["exampleTranslation"]
+    with pytest.raises(jsonschema.ValidationError):
+        validate(out, "response")
+
+
+def test_request_schema_accepts_listed_targets_only():
+    for code in CODES:
+        validate({**GOLDEN_REQUEST, "target": code}, "request")
+    with pytest.raises(jsonschema.ValidationError):
+        validate({**GOLDEN_REQUEST, "target": "xx"}, "request")
