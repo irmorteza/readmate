@@ -40,7 +40,7 @@
       "cached": false,
       "model": "fake",
       "latencyMs": 0,
-      "promptVersion": "wi-3",
+      "promptVersion": "wi-4",
       "attempts": 1,
       "stopReasons": [
         "end_turn"

@@ -82,6 +82,12 @@ def test_system_prompt_covers_targets_and_backlog_fixes():
         "jemanden jemandem vorstellen",
         "exampleTranslation",
         "phonetic is still the IPA of the tapped word as written",
+        "exactly two parts",
+        "Funktionsverbgefüge",
+        "in Frage stellen",
+        "never separableVerb",
+        "Er wird Arzt.",
+        "predicate adjective or noun",
     ):
         assert needle in SYSTEM_PROMPT, needle
     assert "English gloss" not in SYSTEM_PROMPT
@@ -150,11 +156,12 @@ PINNED = {
     "wi-1": "a6efae7c514a139dd62ad8ba8f670a4c4998740d5db7d5b257d05fb64188dda4",
     "wi-2": "ddc01f7c1e28cecb035f093ca861d8bd79607f1942a3c7f014c4ef9f0a82c39f",
     "wi-3": "6f75d5ef69623997a0ffab13c7b51f12aab59ffdbda6d92c85cc0a9b8c3fc174",
+    "wi-4": "acfcadd9c8ac6f6778579c9308319cbcd0509823bcbda8c7909eb2ff3072c23b",
 }
 
 
 def test_prompt_fingerprint_is_pinned_to_version():
     # Changing SYSTEM_PROMPT, USER_TEMPLATE or MODEL_OUTPUT_SCHEMA requires bumping PROMPT_VERSION
     # (cached answers are keyed by it) and recording the new fingerprint here.
-    assert PROMPT_VERSION == "wi-3"
+    assert PROMPT_VERSION == "wi-4"
     assert PINNED.get(PROMPT_VERSION) == prompt_fingerprint()

@@ -7,7 +7,7 @@ import json
 from readmate.wordinfo.languages import by_code
 from readmate.wordinfo.request import WordInfoRequest
 
-PROMPT_VERSION = "wi-3"
+PROMPT_VERSION = "wi-4"
 
 POS = (
     "noun",
@@ -53,14 +53,19 @@ last word before the end mark. When the tapped word is part of a separable verb,
 (with the particle) and the indexes of both parts. Otherwise separableVerb is null. When the tapped \
 word is the separable particle (for example "zu." in "Sie macht das Fenster zu."), describe the \
 separable verb: lemma is the infinitive with the particle ("zumachen"), pos is verb, \
-separableVerb is filled, and phonetic is still the IPA of the tapped word as written.
+separableVerb is filled, and phonetic is still the IPA of the tapped word as written. A separable \
+verb has exactly two parts, a stem and a particle: wordIndexes has exactly 2 entries and infinitive \
+is a single word. Light-verb constructions (Funktionsverbgefüge) such as "in Frage stellen" are \
+expressions, never separableVerb.
 - Multi-word expressions: detect collocations, idioms, reflexive or prepositional verb patterns and \
 light-verb constructions that include the tapped word. Give the canonical form (for example \
 "zur Verfügung stellen", "sich freuen auf"), its meaning, its type and the indexes of its words in \
 this text. Otherwise expression is null. The separable verb belongs in separableVerb only: never \
 return an expression that consists only of the separable verb's parts, or of those parts plus the \
 verb's objects or other arguments ("jemanden jemandem vorstellen" is not an expression). Return an \
-expression only for a fixed multi-word unit with its own meaning.
+expression only for a fixed multi-word unit with its own meaning. A verb together with its \
+predicate adjective or noun is not an expression: for "Er wird Arzt." with the tapped word "Arzt." \
+expression is null ("werden Arzt" is not one).
 - Do not split compound nouns; treat each compound as a single word.
 - Kind semantics: kind "sentence" is a full sentence. kind "fragment" means a heading, caption or \
 stand-alone text, not a full sentence. kind "incomplete" means the words are cut off at one or both \
