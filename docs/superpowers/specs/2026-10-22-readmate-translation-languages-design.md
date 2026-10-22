@@ -1,7 +1,7 @@
 # ReadMate — Translation Languages Design Spec
 
 - **Date:** 2026-10-22
-- **Status:** Draft, awaiting owner approval
+- **Status:** Approved (2026-10-22), with the owner's change: the target's English name and mode are part of the cache key (§3.2, §4.4)
 - **Path in repo:** `docs/superpowers/specs/2026-10-22-readmate-translation-languages-design.md`
 - **Builds on:** `2026-10-21-readmate-word-info-design.md` (with its amendments and §15), `contract/word-info.schema.json`
 - **Plans:** A — languages data, contract, backend, prompt `wi-3`, probe; B — frontend
@@ -74,7 +74,7 @@ The Lambda package contains only `backend/src`, and the Vite dev server does not
 
 Adding a language is: one entry in `contract/languages.json`, run the script, add a probe case (§8), commit. No code changes.
 
-**Changing an existing entry's `english` name changes what the model is told**, but it is not part of the prompt fingerprint (§5.5). Adding a language must not invalidate the whole cache, so it is left out. The rule is stated in the sync script's docstring, and the script prints it after every run: renaming the `english` name or changing the `mode` of an existing entry requires a `PROMPT_VERSION` bump. Adding an entry does not.
+**Changing an existing entry's `english` name or `mode` changes what the model is told.** These fields are not part of the prompt fingerprint (§5.5), because adding a language must not invalidate the whole cache. They are part of the cache key instead (§4.4). Changing one entry therefore invalidates only that language's cached answers, and adding an entry invalidates nothing. No manual version bump is needed.
 
 ## 4. API contract (additive)
 
@@ -106,7 +106,13 @@ The meaning of the existing fields, written into the schema as `description`s:
 
 ### 4.4 Cache
 
-The cache key already contains `target` (word-info spec §6.1), and `PROMPT_VERSION` is bumped, so no `wi-2` answer is ever served. Each target is cached separately. Changing the language in the sheet is a cache miss the first time, so it costs one model call and one unit of the daily cap.
+The cache key material (word-info spec §6.1) gains the target entry's English name and mode, right after the code:
+
+```
+key = sha256( PROMPT_VERSION | model | target | target_english | target_mode | kind | wordIndex | normalized words ).hexdigest()
+```
+
+`target_english` and `target_mode` come from the languages data for the request's code, never from the request. Because `PROMPT_VERSION` is bumped, no `wi-2` answer is ever served. Each target is cached separately. Editing one entry's `english` or `mode` changes only that target's keys (§3.2). Changing the language in the sheet is a cache miss the first time, so it costs one model call and one unit of the daily cap.
 
 ## 5. Prompt `wi-3`
 
@@ -155,7 +161,7 @@ Validation additionally checks `exampleTranslation` as a required string with a 
 | File | Change |
 |---|---|
 | `wordinfo/languages.py` (new) + `languages.json` (generated) | `LANGUAGES` (tuple of frozen dataclasses), `CODES`, `DEFAULT`, `by_code(code)` |
-| `wordinfo/request.py` | `TARGETS = languages.CODES` |
+| `wordinfo/request.py` | `TARGETS = languages.CODES`; `cache_key` adds the target's `english` and `mode` (§4.4) |
 | `wordinfo/prompt.py` | `wi-3`, new rules, `exampleTranslation` in the schema, the `<target_language>` line in `USER_TEMPLATE` and `build_user_message` |
 | `wordinfo/validate.py` | `exampleTranslation`, the `en` override, the two normalizations |
 | `engines/fake_word_info.py` | reads the target; returns `exampleTranslation`. For `fa` and `ar` it returns short real right-to-left sample strings, and for other non-`en` targets `"[<code>] fake translation"`, so RTL can be checked locally with `run.cmd -Engine fake` |
@@ -253,7 +259,7 @@ No AWS, IAM, SSM or bootstrap change. No owner command is needed beyond the push
 - Prompt: the `<target_language>` line for `en`, `fa` and `de` (name, code and mode from the data); the version and hash pin; the schema has `exampleTranslation` and still exactly 2 `anyOf`.
 - Validate: `exampleTranslation` is required, non-empty and capped; for `en` it equals `exampleEn`; for `fa` it is kept; expression dropped when it is a subset of the separable verb and kept when it has an extra word; lemma set to the infinitive when `separableVerb` is present.
 - Fake engine: `exampleTranslation` for each target kind; RTL samples for `fa` and `ar`.
-- Service: the cache key differs by target (already covered; extended with `fa`).
+- Cache key: it differs by target (extended with `fa`). Changing one language's `english` name, or its `mode`, changes the key for that target and leaves the keys of every other target unchanged. Adding an entry changes no existing key.
 - Contract: the golden example passes the schema; a response without `exampleTranslation` fails it; the request schema accepts each code and rejects `xx`.
 - Probe: §8.
 - All existing tests pass. A test needs a changed assertion only where this spec changes behaviour: the prompt version and hash pin, the `target` checks in request tests, the golden example, and the fake engine's output shape.
@@ -274,5 +280,4 @@ No AWS, IAM, SSM or bootstrap change. No owner command is needed beyond the push
 - Quality in each target language is unmeasured until the probe runs, and is likely weaker for low-resource pairs. Simple-German explanations may still use hard words.
 - Persian and Arabic sentences that quote German words mix directions. The browser's bidi algorithm usually places them correctly; punctuation next to a quoted German word can look wrong. This is accepted for the pilot.
 - The token multipliers in §9 are estimates until the probe runs.
-- Renaming an existing language entry without a version bump would mix old and new answers in the cache (§3.2).
 - A new frontend against an old backend fails for non-English targets until Plan A is deployed (§4.3).
