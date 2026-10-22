@@ -360,3 +360,34 @@ def test_nested_mutation_does_not_leak_into_cache():
     second["separableVerb"]["wordIndexes"].append(9)
     assert svc.lookup(REQ, ms())["separableVerb"]["wordIndexes"] == [1, 2]
     assert store.get(KEY)["separableVerb"]["wordIndexes"] == [1, 2]
+
+
+def _dynamo_store_with_empty_cache():
+    import boto3
+    from botocore.stub import Stubber
+
+    client = boto3.client(
+        "dynamodb",
+        region_name="eu-central-1",
+        aws_access_key_id="testing",
+        aws_secret_access_key="testing",
+    )
+    stubber = Stubber(client)
+    stubber.add_response("get_item", {})
+    stubber.activate()
+    return DynamoStore("t", client=client), stubber
+
+
+@pytest.mark.parametrize("kind", ["memory", "dynamo"])
+def test_cap_zero_is_429_and_never_calls_engine(kind):
+    stubber = None
+    if kind == "dynamo":
+        store, stubber = _dynamo_store_with_empty_cache()
+    else:
+        store = MemoryStore()
+    svc, engine, _ = make([good()], store=store, cap=0)
+    err = fail(svc)
+    assert (err.status, err.code) == (429, "DAILY_LIMIT")
+    assert engine.calls == []
+    if stubber:
+        stubber.assert_no_pending_responses()

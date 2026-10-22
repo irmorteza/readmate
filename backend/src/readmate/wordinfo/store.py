@@ -123,6 +123,8 @@ class DynamoStore(CacheStore):
             raise StoreUnavailable from None
 
     def increment_daily(self, cap: int) -> int:
+        if cap <= 0:
+            raise DailyLimitReached
         now = int(self._now())
         limit = False
         failed = False

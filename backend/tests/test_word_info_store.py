@@ -210,3 +210,11 @@ def test_lru_put_existing_refreshes():
     lru.put("c", {"v": 3})  # evicts b
     assert lru.get("b") is None
     assert lru.get("a") == {"v": 9}
+
+
+@pytest.mark.parametrize("cap", [0, -1])
+def test_increment_daily_cap_zero_makes_no_request(dynamo, cap):
+    store, stubber = dynamo
+    with pytest.raises(DailyLimitReached):
+        store.increment_daily(cap)
+    stubber.assert_no_pending_responses()
