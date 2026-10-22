@@ -4,14 +4,18 @@ import hashlib
 import json
 import re
 import unicodedata
+from collections.abc import Mapping
 from dataclasses import dataclass
+
+from . import languages
+from .languages import Language
 
 MAX_BODY_BYTES = 16 * 1024
 MAX_WORDS = 120
 MAX_WORD_CHARS = 64
 MAX_TEXT_CHARS = 600
 KINDS = ("sentence", "fragment", "incomplete")
-TARGETS = ("en",)
+TARGETS = languages.CODES
 
 _WS = re.compile(r"\s+")
 
@@ -90,8 +94,23 @@ def parse_request(body: bytes) -> WordInfoRequest:
     return WordInfoRequest(word, index, kind, tuple(words), target)
 
 
-def cache_key(req: WordInfoRequest, prompt_version: str, model: str) -> str:
+def cache_key(
+    req: WordInfoRequest,
+    prompt_version: str,
+    model: str,
+    table: Mapping[str, Language] = languages.BY_CODE,
+) -> str:
+    language = table[req.target]
     material = "|".join(
-        [prompt_version, model, req.target, req.kind, str(req.word_index), "\x1f".join(req.words)]
+        [
+            prompt_version,
+            model,
+            req.target,
+            language.english,
+            language.mode,
+            req.kind,
+            str(req.word_index),
+            "".join(req.words),
+        ]
     )
     return hashlib.sha256(material.encode("utf-8")).hexdigest()

@@ -4,6 +4,7 @@ from dataclasses import replace
 
 import pytest
 
+from readmate.wordinfo.languages import BY_CODE, CODES, Language
 from readmate.wordinfo.request import (
     MAX_BODY_BYTES,
     BadRequest,
@@ -95,7 +96,7 @@ def test_601_joined_chars_is_400():
         parse_request(body(word="aaaa", wordIndex=0, sentence={"words": words}))
 
 
-@pytest.mark.parametrize("target", ["de", "", None])
+@pytest.mark.parametrize("target", ["xx", "FA", "zh-hans", "", None, 5, ["en"]])
 def test_bad_target_is_400(target):
     with pytest.raises(BadRequest):
         parse_request(body(target=target))
@@ -194,3 +195,30 @@ def test_lone_surrogate_in_word_only_is_400():
 def test_deeply_nested_json_is_400():
     with pytest.raises(BadRequest):
         parse_request(b"[" * 16000)
+
+
+@pytest.mark.parametrize("code", CODES)
+def test_every_listed_target_is_accepted(code):
+    assert parse_request(body(target=code)).target == code
+
+
+def test_cache_key_differs_by_target():
+    en, fa = parse_request(body(target="en")), parse_request(body(target="fa"))
+    assert cache_key(en, "wi-3", "m") != cache_key(fa, "wi-3", "m")
+
+
+@pytest.mark.parametrize("field, value", [("english", "Farsi"), ("mode", "explain")])
+def test_renaming_or_remoding_one_language_changes_only_its_keys(field, value):
+    table2 = {**BY_CODE, "fa": replace(BY_CODE["fa"], **{field: value})}
+    for code in CODES:
+        req = parse_request(body(target=code))
+        default = cache_key(req, "wi-3", "m")
+        changed = cache_key(req, "wi-3", "m", table2)
+        assert (changed != default) == (code == "fa"), code
+
+
+def test_adding_a_language_changes_no_existing_key():
+    table3 = {**BY_CODE, "xx": Language("xx", "X", "X", "ltr", "translate")}
+    for code in CODES:
+        req = parse_request(body(target=code))
+        assert cache_key(req, "wi-3", "m", table3) == cache_key(req, "wi-3", "m")
