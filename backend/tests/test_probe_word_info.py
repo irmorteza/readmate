@@ -85,14 +85,16 @@ def test_format_row_for_an_error_shows_status_and_code():
     assert "502" in line and "LOOKUP_FAILED" in line and "max_tokens:1500" in line
 
 
-def test_cases_are_twelve_well_formed_entries():
+def test_cases_are_thirteen_well_formed_entries():
     cases = probe_word_info.CASES
-    assert len(cases) == 12
+    assert len(cases) == 13
+    adjective = next(c for c in cases if c["name"] == "adjective after a verb")
+    assert adjective["words"] == ["Das", "Wasser", "ist", "klar."] and adjective["wordIndex"] == 3
     for case in cases:
         assert set(case) >= {"name", "word", "wordIndex", "kind", "words"}
         assert case["words"][case["wordIndex"]].strip(".,") == case["word"].strip(".,")
         assert case["kind"] in {"sentence", "fragment", "incomplete"}
-    assert len({c["name"] for c in cases}) == 12
+    assert len({c["name"] for c in cases}) == 13
 
 
 class Api:

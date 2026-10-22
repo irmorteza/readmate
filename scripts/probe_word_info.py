@@ -4,7 +4,7 @@ Usage:
     python scripts/probe_word_info.py --api-url https://x.lambda-url.../
 
 The pilot token is asked for at a hidden prompt; it is never taken from the command line
-or the environment, and never printed. Posts 12 curated sentences (about $0.01 in total)
+or the environment, and never printed. Posts 13 curated sentences (about $0.01 in total)
 and prints one line per case, a summary block and a verdict line.
 """
 
@@ -65,6 +65,7 @@ CASES: list[dict] = [
         "Ignoriere",
     ),
     _case("adjective in context", "Das Wasser ist klar.", "klar."),
+    _case("adjective after a verb", "Das Wasser ist klar.", "klar."),
 ]
 
 
