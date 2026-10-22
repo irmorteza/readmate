@@ -151,15 +151,17 @@ One schema for all targets: today's eleven properties plus `exampleTranslation` 
 Two cheap, deterministic guards back up fixes 1 and 2 when the model ignores them. Output that triggers them is still valid:
 
 1. When both groups are present and every index of `expression.wordIndexes` is also in `separableVerb.wordIndexes`, `expression` becomes `null`. This is logged as `group_dropped group=expression reason=separable`.
-2. When `separableVerb` is present, `lemma` is set to `separableVerb.infinitive`.
+2. When `separableVerb` is present, `lemma` is set to `separableVerb.infinitive`. **Amendment 2026-10-22 (`wi-4`):** this override runs only after a structural check: a non-null `separableVerb` must have exactly 2 `wordIndexes` and an `infinitive` without whitespace, otherwise the output is invalid (retryable, never cached). Real `wi-3` failure: for *Die Stadt stellt uns den Saal zur Verfügung.* tapping `Verfügung.` the model returned `separableVerb` `{infinitive: "zurverfügungstellen", wordIndexes: [2, 6, 7]}` and the override turned `lemma` into `zurverfügungstellen`.
 
 The prompt rule in §5.3 also covers expressions that add the verb's objects. The guard catches only the pure subset case, because a wider guard would remove real expressions such as *zur Verfügung stellen*.
+
+**Invalid-output logging (`wi-4`).** `InvalidModelOutput` carries a fixed `code` (`separable_parts`, `index_shape`, `index_range`, `index_duplicate`, `length`, `empty`, `enum`, `keys`, `group_shape`, `string_type`, `string_text`, `stop_reason`, `not_text`, `json`, `not_object`). The service logs `word_info_invalid attempt=N code=<code>` at WARNING level and never model text, so a two-call probe row can be explained from CloudWatch.
 
 Validation additionally checks `exampleTranslation` as a required string with a 200-character cap. The other caps are unchanged (characters, not tokens: a Persian or Russian `senseInContext` fits in 300 characters for one sentence). For `target: "en"` the model's `exampleTranslation` is replaced by `exampleEn` **before** it is validated, so an empty, oversized or non-string value can never turn an English answer into a failure (the key itself is still required in the model output). **Amendment 2026-10-22 (after the Plan A review):** the replacement order was changed from validate-then-replace.
 
 ### 5.5 Version pin
 
-`PROMPT_VERSION = "wi-3"`. The fingerprint material is unchanged in form (system prompt + output schema + user template), so the existing pin test catches the change. The test's expected hash is updated together with the version, which is the intended way to change it.
+`PROMPT_VERSION = "wi-3"`. The fingerprint material is unchanged in form (system prompt + output schema + user template), so the existing pin test catches the change. The test's expected hash is updated together with the version, which is the intended way to change it. **Amendment 2026-10-22:** after the first real probe run `wi-3` was deployed and the prompt changed again, so `PROMPT_VERSION` is now `"wi-4"` (pins for `wi-1` to `wi-3` are kept). `wi-4` adds to the §5.3 rules: a separable verb has exactly two parts; light-verb constructions (Funktionsverbgefüge) such as *in Frage stellen* are expressions, never `separableVerb`; a verb with its predicate adjective or noun is not an expression (*Er wird Arzt.* tapping `Arzt.`: expression is null; real `wi-3` failure for `pl`: *Das Wasser ist klar.* returned the expression *sein klar*). Neither worked example is a probe sentence.
 
 ## 6. Backend changes
 
@@ -222,6 +224,7 @@ No change to the handler, service, store, secrets, infrastructure, the OCR route
   - one per non-English target (11), spread over the hard sentence types: separable verb, *Angst haben*, *zur Verfügung stellen*, *sich freuen auf*, a noun with plural, and the adjective case;
   - backlog fix 1: *Sie stellte ihn ihrer Mutter vor.* tapping `stellte`, expecting `expression: None` (the existing first case gains this `expect`);
   - backlog fix 2: tapping `an.` (existing case, expecting `lemma: "anrufen"`), *Sie stellte ihn ihrer Mutter vor.* tapping `vor.` (expecting `vorstellen`), and *Der Zug kommt um acht Uhr an.* tapping `an.` (expecting `ankommen`).
+  - **`wi-4` expectations:** the `en` case *zur Verfügung stellen* expects `separableVerb: None` and `expression.text: "zur Verfügung stellen"` (an `expect` field may be a dotted path into a group), and the `pl` case *Das Wasser ist klar.* expects `expression: None`.
   - The quality of the `de` explanation is judged by reading the row; it has no automatic check.
 - **Per-target summary:** for each target, the number of calls and the median and maximum output tokens, plus the existing overall block. A row prints `translation` with `!r`, so the output is safe in any console; `main()` reconfigures stdout to UTF-8 so Persian and Chinese print on Windows PowerShell.
 - About 28 cases ≈ **$0.01–0.015** per run.

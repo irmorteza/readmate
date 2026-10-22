@@ -178,7 +178,7 @@ The service adds `version` and `word`, maps `""` to `null` for `article` and `pl
 - **Length caps**: lemma 64, phonetic 80, translation 120, senseInContext 300, examples 200 each, plural 64, infinitive 64, expression text 120, meaning 200.
 - Each group's `wordIndexes` are integers, `0 ≤ i < len(words)`, unique, with 2–12 entries. Any violation makes the whole output invalid.
 - **Normalization (output stays valid):** indexes are sorted. A group that does not contain `wordIndex` is replaced by `null` (logged as `group_dropped`), because it describes a different word. `article` / `plural` are set to `null` when `pos ≠ noun`.
-- Invalid output raises `InvalidModelOutput`. It is never cached, and it is retryable once (§5.6).
+- Invalid output raises `InvalidModelOutput`. It is never cached, and it is retryable once (§5.6). **Amendment 2026-10-22 (`wi-4`):** a non-null `separableVerb` must have exactly 2 `wordIndexes` and a one-word `infinitive`; anything else is invalid output (a light-verb construction returned as a three-part separable verb is the real case). The service logs each invalid attempt as `word_info_invalid attempt=N code=<fixed code>` (for example `separable_parts`, `index_range`, `length`, `enum`), never model text.
 
 ### 5.5 Prompt (`PROMPT_VERSION = "wi-2"`; was `wi-1`)
 
@@ -208,6 +208,8 @@ The **user message** is a fixed template with the data inside delimiters:
 **Amendment 2026-10-22 (`wi-2`):** the user message also carries the tapped word's text in `<tapped_word>`, escaped like the words (`<` and `>` replaced), and the system prompt says to describe exactly the word at that index, even when it belongs to a predicate with a verb. Reason: for "Das Wasser ist klar." with the tapped word "klar." the model answered with the lemma "sein".
 
 **Amendment 2026-10-22 (`wi-3`):** target language in the user message, `exampleTranslation`, and the two backlog fixes; see the translation-languages spec §5.
+
+**Amendment 2026-10-22 (`wi-4`):** the prompt says that a separable verb has exactly two parts, that light-verb constructions (Funktionsverbgefüge) are expressions and never `separableVerb`, and that a verb with its predicate adjective or noun is not an expression. See the translation-languages spec §5.3–§5.5.
 
 A guard test pins `sha256(system prompt + json(MODEL_OUTPUT_SCHEMA) + user template)` next to `PROMPT_VERSION`. Changing any of them without bumping the version fails the test, so stale cache entries can never be served for a new prompt.
 
