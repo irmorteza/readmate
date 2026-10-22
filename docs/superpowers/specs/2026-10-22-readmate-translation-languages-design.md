@@ -65,7 +65,7 @@ The Lambda package contains only `backend/src`, and the Vite dev server does not
 - `frontend/src/languages.json`, imported by `frontend/src/languages.ts`;
 - the `target` enum in `contract/word-info.schema.json` (`$defs.request.properties.target.enum`).
 
-`scripts/sync_languages.py` (stdlib only) checks the file and then writes the three targets. It checks that codes are unique and non-empty, `dir` and `mode` are allowed values, there are no extra keys, and `default` is listed. It changes nothing else in the schema file. It writes the JSON copies byte-identically and the schema with 2-space indentation and a trailing newline, the format the schema file uses today.
+`scripts/sync_languages.py` (stdlib only) checks the file and then writes the three targets. It checks that codes are unique ignoring case and non-empty, that `english` and `native` contain none of `<`, `>`, `"`, `|` or a line break (`english` goes into the prompt tag and the cache key), `dir` and `mode` are allowed values, there are no extra keys, and `default` is listed. It changes nothing else in the schema file. It writes the JSON copies byte-identically and the schema with 2-space indentation and a trailing newline, the format the schema file uses today.
 
 **Sync tests** fail with the message "run `python scripts/sync_languages.py`" when a copy is out of date:
 
@@ -155,7 +155,7 @@ Two cheap, deterministic guards back up fixes 1 and 2 when the model ignores the
 
 The prompt rule in §5.3 also covers expressions that add the verb's objects. The guard catches only the pure subset case, because a wider guard would remove real expressions such as *zur Verfügung stellen*.
 
-Validation additionally checks `exampleTranslation` as a required string with a 200-character cap. The other caps are unchanged (characters, not tokens: a Persian or Russian `senseInContext` fits in 300 characters for one sentence). For `target: "en"` the validated `exampleTranslation` is replaced by `exampleEn`.
+Validation additionally checks `exampleTranslation` as a required string with a 200-character cap. The other caps are unchanged (characters, not tokens: a Persian or Russian `senseInContext` fits in 300 characters for one sentence). For `target: "en"` the model's `exampleTranslation` is replaced by `exampleEn` **before** it is validated, so an empty, oversized or non-string value can never turn an English answer into a failure (the key itself is still required in the model output). **Amendment 2026-10-22 (after the Plan A review):** the replacement order was changed from validate-then-replace.
 
 ### 5.5 Version pin
 
@@ -259,10 +259,10 @@ No AWS, IAM, SSM or bootstrap change. No owner command is needed beyond the push
 
 **Backend (pytest, no network):**
 
-- Languages: the loader, `by_code`, the sync tests and the script's rejection cases (§3.2).
+- Languages: the loader, `by_code`, the sync tests and the script's rejection cases (§3.2), including codes that collide ignoring case and names containing `<`, `>`, `"`, `|` or a line break.
 - Request: every listed code accepted; an unknown code, a wrong-case code (`FA`) and a non-string rejected.
 - Prompt: the `<target_language>` line for `en`, `fa` and `de` (name, code and mode from the data); the version and hash pin; the schema has `exampleTranslation` and still exactly 2 `anyOf`; no probe case sentence appears in `SYSTEM_PROMPT`.
-- Validate: `exampleTranslation` is required, non-empty and capped; for `en` it equals `exampleEn`; for `fa` it is kept; expression dropped when it is a subset of the separable verb and kept when it has an extra word; lemma set to the infinitive when `separableVerb` is present.
+- Validate: `exampleTranslation` is required, non-empty and capped; for `en` it equals `exampleEn` even when the model value is invalid; for `fa` it is kept (and an invalid value is rejected); expression dropped when it is a subset of the separable verb and kept when it has an extra word; lemma set to the infinitive when `separableVerb` is present.
 - Fake engine: `exampleTranslation` for each target kind; RTL samples for `fa` and `ar`.
 - Cache key: it differs by target (extended with `fa`). Changing one language's `english` name, or its `mode`, changes the key for that target and leaves the keys of every other target unchanged. Adding an entry changes no existing key.
 - Contract: the golden example passes the schema; a response without `exampleTranslation` fails it; the request schema accepts each code and rejects `xx`.

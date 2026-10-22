@@ -188,7 +188,7 @@ aws cloudformation describe-change-set --region eu-central-1 --change-set-name $
 
 **Privacy.** Tapped words with their sentence (or window) are sent to Anthropic for each lookup that misses the cache. No user identifier, image or token is sent. Data use follows Anthropic's commercial API terms (API inputs are not used for training by default). DynamoDB stores only hashes and generated answers. Logs hold request id, cached flag, latency, token usage, stop reason and error code, never the sentence, words, key or token.
 
-**Quality probe (optional, after deploys or prompt changes).** It posts 12 curated sentences (about $0.01), prints one line per case, a summary of model calls, `max_tokens` stops and output-token statistics, and a verdict line. It asks for the pilot token at a hidden prompt; the token is never an argument. Right after a deploy with a new `PROMPT_VERSION` every row is a cache miss.
+**Quality probe (optional, after deploys or prompt changes).** It posts 26 curated cases covering every target language (about $0.01-0.015), prints one line per case (with `expect OK` or `expect FAIL` where a case has expectations), a summary of model calls, `max_tokens` stops and output-token statistics, a per-target token block, the number of expectation failures, and a verdict line. It asks for the pilot token at a hidden prompt; the token is never an argument. Right after a deploy with a new `PROMPT_VERSION` every row is a cache miss.
 
 ```powershell
 $url = aws cloudformation describe-stacks --stack-name readmate --query "Stacks[0].Outputs[?OutputKey=='FunctionUrl'].OutputValue" --output text
