@@ -9,6 +9,12 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 import probe_word_info  # noqa: E402
 
+ROOT = Path(__file__).resolve().parents[2]
+LANGUAGE_CODES = [
+    x["code"]
+    for x in json.loads((ROOT / "contract/languages.json").read_text(encoding="utf-8"))["languages"]
+]
+
 
 def ok_row(stops, tokens, cached=False, **extra):
     body = {
@@ -85,16 +91,66 @@ def test_format_row_for_an_error_shows_status_and_code():
     assert "502" in line and "LOOKUP_FAILED" in line and "max_tokens:1500" in line
 
 
-def test_cases_are_thirteen_well_formed_entries():
+def test_cases_are_well_formed():
     cases = probe_word_info.CASES
-    assert len(cases) == 13
+    assert len(cases) == 26
     adjective = next(c for c in cases if c["name"] == "adjective after a verb")
     assert adjective["words"] == ["Das", "Wasser", "ist", "klar."] and adjective["wordIndex"] == 3
     for case in cases:
-        assert set(case) >= {"name", "word", "wordIndex", "kind", "words"}
+        assert set(case) >= {"name", "word", "wordIndex", "kind", "words", "target", "expect"}
         assert case["words"][case["wordIndex"]].strip(".,") == case["word"].strip(".,")
         assert case["kind"] in {"sentence", "fragment", "incomplete"}
-    assert len({c["name"] for c in cases}) == 13
+        assert case["target"] in LANGUAGE_CODES
+    assert len({c["name"] for c in cases}) == 26
+
+
+def test_every_listed_target_has_a_case():
+    assert {c["target"] for c in probe_word_info.CASES} == set(LANGUAGE_CODES)
+
+
+def test_backlog_cases_carry_expectations():
+    by_name = {c["name"]: c for c in probe_word_info.CASES}
+    assert by_name["separable, adjacent at line end"]["expect"] == {
+        "expression": None,
+        "lemma": "vorstellen",
+    }
+    assert by_name["tap the particle"]["expect"] == {"lemma": "anrufen"}
+    assert by_name["tap the particle vor"]["expect"] == {"lemma": "vorstellen"}
+    assert by_name["tap the particle ankommen"]["expect"] == {"lemma": "ankommen"}
+
+
+def test_check_expect():
+    row = ok_row(["end_turn"], [400])
+    assert probe_word_info.check_expect(row, {"lemma": "vorstellen"}) == []
+    assert probe_word_info.check_expect(row, {}) == []
+    assert probe_word_info.check_expect(row, None) == []
+    assert probe_word_info.check_expect(row, {"lemma": "anrufen"}) == ["lemma"]
+    assert probe_word_info.check_expect(row, {"separableVerb": None}) == ["separableVerb"]
+    assert probe_word_info.check_expect(row, {"expression": None}) == []
+    bad = error_row(["max_tokens"], [1500])
+    assert probe_word_info.check_expect(bad, {"lemma": "x"}) == ["(no answer)"]
+    assert probe_word_info.check_expect(bad, {}) == []
+
+
+def test_summarize_by_target_excludes_cached_rows():
+    rows = [
+        {**ok_row(["end_turn"], [400]), "target": "en"},
+        {**ok_row(["end_turn"], [600]), "target": "fa"},
+        {**ok_row(["end_turn"], [800]), "target": "fa"},
+        {**ok_row([], [], cached=True), "target": "fa"},
+    ]
+    assert probe_word_info.summarize_by_target(rows) == {
+        "en": {"calls": 1, "median_output_tokens": 400, "max_output_tokens": 400},
+        "fa": {"calls": 2, "median_output_tokens": 700, "max_output_tokens": 800},
+    }
+
+
+def test_format_row_shows_target_and_expectation_result():
+    row = {**ok_row(["end_turn"], [400]), "target": "fa"}
+    assert "target=fa" in probe_word_info.format_row(row)
+    assert "expect OK" in probe_word_info.format_row(row, {"lemma": "vorstellen"})
+    assert "expect FAIL lemma" in probe_word_info.format_row(row, {"lemma": "x"})
+    assert "expect" not in probe_word_info.format_row(row)
 
 
 class Api:
@@ -152,7 +208,7 @@ def test_run_case_parses_a_200(api_factory):
     assert headers["X-Pilot-Token"] == "tok"
     assert sent["word"] == case["word"] and sent["wordIndex"] == case["wordIndex"]
     assert sent["sentence"] == {"kind": case["kind"], "words": case["words"]}
-    assert sent["target"] == "en"
+    assert sent["target"] == case["target"] == "en"
 
 
 def test_run_case_parses_a_502(api_factory):
