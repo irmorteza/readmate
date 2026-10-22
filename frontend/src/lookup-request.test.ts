@@ -153,3 +153,15 @@ describe("clipping", () => {
     expect(built.request.word).toBe(long);
   });
 });
+
+describe("buildLookup target", () => {
+  it("defaults to en and passes a chosen target through", () => {
+    const result = resultOf(texts(4));
+    const event = sentenceEvent(result, 1);
+    const plain = buildLookup(event, result).request;
+    expect(plain.target).toBe("en");
+    const fa = buildLookup(event, result, "fa").request;
+    expect(fa.target).toBe("fa");
+    expect({ ...fa, target: "en" }).toEqual(plain);
+  });
+});

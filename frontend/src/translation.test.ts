@@ -159,3 +159,24 @@ describe("createTranslationService", () => {
     expect((await service.lookup(req("x"))).word).toBe("x");
   });
 });
+
+describe("target language", () => {
+  it("records the request target and keeps exampleTranslation", () => {
+    const info = toWordInfo(golden, { ...goldenRequest, target: "fa" });
+    expect(info.target).toBe("fa");
+    expect(info.exampleTranslation).toBe(golden.exampleTranslation);
+  });
+
+  it("omits exampleTranslation when the response has none", () => {
+    const old: Partial<WordInfoResponse> = { ...golden };
+    delete old.exampleTranslation;
+    expect("exampleTranslation" in toWordInfo(old as WordInfoResponse, goldenRequest)).toBe(false);
+  });
+
+  it("posts the fa request unchanged", async () => {
+    const post = vi.fn().mockResolvedValue(golden);
+    const request = { ...goldenRequest, target: "fa" };
+    await createApiTranslationService({ getToken: () => "tok", post }).lookup(request);
+    expect(post).toHaveBeenCalledWith(request, "tok");
+  });
+});

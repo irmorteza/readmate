@@ -1,4 +1,5 @@
 import type { OcrResult, SentenceKind } from "./contract";
+import { DEFAULT_TARGET } from "./languages";
 import type { WordSelectedEvent } from "./selection";
 import type { WordInfoRequest } from "./word-info-contract";
 
@@ -47,7 +48,11 @@ function windowAround(words: string[], at: number): [number, number] {
 }
 
 /** Builds the word-info request from a tapped word: its sentence, else the words of its lines. */
-export function buildLookup(event: WordSelectedEvent, result: OcrResult): BuiltLookup {
+export function buildLookup(
+  event: WordSelectedEvent,
+  result: OcrResult,
+  target: string = DEFAULT_TARGET,
+): BuiltLookup {
   const byId = new Map(result.words.map((w) => [w.id, w]));
   let kind: SentenceKind;
   let contextSource: ContextSource;
@@ -91,7 +96,7 @@ export function buildLookup(event: WordSelectedEvent, result: OcrResult): BuiltL
   }
 
   return {
-    request: { word: event.word.text, wordIndex, sentence: { kind, words }, target: "en" },
+    request: { word: event.word.text, wordIndex, sentence: { kind, words }, target },
     wordIds: ids,
     contextSource,
     windowed,

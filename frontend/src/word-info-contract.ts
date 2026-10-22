@@ -8,7 +8,7 @@ export interface WordInfoRequest {
   word: string;
   wordIndex: number;
   sentence: { kind: SentenceKind; words: string[] };
-  target: "en";
+  target: string;
 }
 
 export type Pos =

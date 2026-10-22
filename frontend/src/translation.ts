@@ -10,6 +10,9 @@ export interface WordInfo {
   translation: string;
   exampleDe: string;
   exampleEn: string;
+  /** The target the answer was asked for; absent means English. */
+  target?: string;
+  exampleTranslation?: string;
   lemma?: string;
   senseInContext?: string;
   article?: string | null;
@@ -112,6 +115,8 @@ export function toWordInfo(response: WordInfoResponse, request: WordInfoRequest)
     translation: response.translation,
     exampleDe: response.exampleDe,
     exampleEn: response.exampleEn,
+    target: request.target,
+    ...(response.exampleTranslation !== undefined && { exampleTranslation: response.exampleTranslation }),
     lemma: response.lemma,
     senseInContext: response.senseInContext,
     article: response.article,
