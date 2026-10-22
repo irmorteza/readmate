@@ -73,7 +73,8 @@ You are the **senior technical advisor** to the owner of ReadMate. Implementatio
 ### Word-info API (spec `2026-10-21-readmate-word-info-design.md`, amended; §15 probe results)
 - Request: `{ word, wordIndex, sentence: { kind, words: string[] }, target: "en" }` (≤ 120 words, ≤ 64 chars each, ≤ 600 joined chars; the client sends a window around the word when longer).
 - Response: frontend `WordInfo` fields + `lemma, senseInContext, article, plural, separableVerb {infinitive, wordIndexes}, expression {text, meaning, type, wordIndexes}, meta {cached, model, latencyMs, promptVersion, attempts, stopReasons, outputTokens}`. Model output is schema-validated (structured outputs) and re-validated server-side; invalid output is never cached.
-- Model call: `anthropic==1.15.0`, `max_tokens 1500`, effort `low`, read timeout 8 s, connect 2 s, at most 2 calls, retry only when ≥ 9.5 s remain. `PROMPT_VERSION = "wi-2"` (adds `<tapped_word>`), pinned by a hash test.
+- Model call: `anthropic==1.15.0`, `max_tokens 1500`, effort `low`, read timeout 8 s, connect 2 s, at most 2 calls, retry only when ≥ 9.5 s remain. `PROMPT_VERSION = "wi-3"` (target language from `contract/languages.json`; separable-particle lemma and no expression that only repeats the separable verb), pinned by a hash test. Cache key also carries the target's English name and mode.
+
 - Cache: DynamoDB `readmate-word-info` (on-demand, TTL `expiresAt`, 90 days, Retain) + in-process LRU 256. Key = sha256(`PROMPT_VERSION|model|target|kind|wordIndex|normalized words`). Sentence text is never stored.
 - Daily counter in the same table, cap `WordInfoDailyCap` = 500 model calls/day → 429; counter errors fail closed (503).
 - API key: SSM SecureString `/readmate/anthropic-api-key` (AWS-managed key), read lazily on the first word-info request, kept in memory, stripped, never logged. The SDK is imported only inside the word-info path (tests prove OCR never loads it; a broken wheel gives word-info 503 only).
