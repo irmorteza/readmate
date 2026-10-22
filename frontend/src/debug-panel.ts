@@ -1,6 +1,7 @@
 import type { DebugSnapshot, SentenceStatus } from "./debug-snapshot";
 import { h } from "./dom";
 import { icon } from "./icons";
+import { languageFor } from "./languages";
 
 export interface DebugPanel {
   element: HTMLDetailsElement;
@@ -115,6 +116,7 @@ export function createDebugPanel(deps?: { writeText?: (text: string) => Promise<
               `Context: ${lookup.contextLength} characters (${lookup.contextSource})` +
               (lookup.windowed ? " · windowed" : ""),
           }),
+          text(`Target: ${lookup.target} (${languageFor(lookup.target).english})`),
         ),
         section(
           "result",

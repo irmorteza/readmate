@@ -3,6 +3,9 @@ import { createDebugPanel } from "./debug-panel";
 import { setClipboard, snap } from "./debug-test-helpers";
 import { declarations } from "./test-css";
 import { gappedResult, sentenceResult } from "./test-fixtures";
+import { buildDebugSnapshot } from "./debug-snapshot";
+import { buildLookup } from "./lookup-request";
+import { createSelection, type WordSelectedEvent } from "./selection";
 
 afterEach(() => setClipboard(undefined));
 
@@ -141,4 +144,16 @@ it("says when the lookup was windowed", () => {
     "Context: 21 characters (sentence) · windowed");
   panel.render(s);
   expect(section("request").querySelector(".debug-context-length")!.textContent).toBe("Context: 21 characters (sentence)");
+});
+
+it("shows the target language code and English name", () => {
+  let event!: WordSelectedEvent;
+  createSelection(sentenceResult, (e) => (event = e)).select(9);
+  const lookup = buildLookup(event, sentenceResult, "fa");
+  const panel = createDebugPanel();
+  document.body.replaceChildren(panel.element);
+  panel.render(
+    buildDebugSnapshot({ build: "abc1234", result: sentenceResult, event, lookup, source: "stub", outcome: { status: "pending" } }),
+  );
+  expect(section("request").textContent).toContain("Target: fa (Persian)");
 });

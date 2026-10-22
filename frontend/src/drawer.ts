@@ -43,7 +43,7 @@ export function createDrawer(deps: DrawerDeps): Drawer {
 
   const language = h("div", { class: "nav-item static" }, icon("languages", { size: 16 }));
   language.append(
-    h("span", { class: "nav-label" }, "Target Language: ", h("strong", { textContent: "German" })),
+    h("span", { class: "nav-label" }, "Book language: ", h("strong", { textContent: "German" })),
   );
 
   const exportButton = button("", () => deps.comingSoon("Export Flashcards"), "secondary full");

@@ -75,10 +75,11 @@ describe("drawer", () => {
     );
   });
 
-  it("shows the target language as static German without a handler", () => {
+  it("shows the book language as static German without a handler", () => {
     const { drawer, deps } = make();
     const row = drawer.element.querySelector(".nav-item.static")!;
-    expect(row.textContent).toContain("Target Language:");
+    expect(row.textContent).toContain("Book language:");
+    expect(row.textContent).not.toContain("Target Language");
     expect(row.textContent).toContain("German");
     expect(row.tagName).not.toBe("BUTTON");
     (row as HTMLElement).click();

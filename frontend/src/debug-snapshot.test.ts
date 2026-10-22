@@ -2,6 +2,9 @@ import { expect, it, vi } from "vitest";
 import { parseOcrResult } from "./contract";
 import { okOutcome } from "./debug-snapshot";
 import { snap } from "./debug-test-helpers";
+import { buildDebugSnapshot } from "./debug-snapshot";
+import { buildLookup } from "./lookup-request";
+import { createSelection, type WordSelectedEvent } from "./selection";
 import { gappedResult, sentenceResult } from "./test-fixtures";
 
 it("describes a word with a sentence", () => {
@@ -13,7 +16,7 @@ it("describes a word with a sentence", () => {
     lineTexts: ["Das Vorstel- war"],
     lookup: {
       request: { word: "war", wordIndex: 1, sentence: { kind: "sentence", words: ["Vorstellungskraft", "war"] }, target: "en" },
-      contextSource: "sentence", contextLength: 21, windowed: false,
+      contextSource: "sentence", contextLength: 21, windowed: false, target: "en",
       status: "pending", source: "stub", response: null, meta: null, error: null },
   });
 });
@@ -63,4 +66,15 @@ it("a windowed lookup says so in the snapshot", () => {
   expect(lookup.windowed).toBe(true);
   expect(lookup.request.sentence.kind).toBe("incomplete");
   expect(lookup.contextLength).toBe(lookup.request.sentence.words.join(" ").length);
+});
+
+it("records a non-default target", () => {
+  let event!: WordSelectedEvent;
+  createSelection(sentenceResult, (e) => (event = e)).select(9);
+  const lookup = buildLookup(event, sentenceResult, "fa");
+  const { lookup: recorded } = buildDebugSnapshot({
+    build: "abc1234", result: sentenceResult, event, lookup, source: "stub", outcome: { status: "pending" },
+  });
+  expect(recorded.target).toBe("fa");
+  expect(recorded.request.target).toBe("fa");
 });

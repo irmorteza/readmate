@@ -31,6 +31,7 @@ export interface DebugSnapshot {
     contextSource: ContextSource;
     contextLength: number;
     windowed: boolean;
+    target: string;
     status: "pending" | "ok" | "error";
     source: string;
     response: Record<string, unknown> | null;
@@ -68,6 +69,7 @@ export function buildDebugSnapshot(input: {
       contextSource: lookup.contextSource,
       contextLength: lookup.context.length,
       windowed: lookup.windowed,
+      target: lookup.request.target,
       status: outcome.status,
       source: input.source,
       response: outcome.status === "ok" ? outcome.response : null,
