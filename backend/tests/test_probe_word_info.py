@@ -253,3 +253,20 @@ def test_main_verdict_asks_for_review_on_max_tokens(api_factory, monkeypatch, ca
 def test_main_has_no_token_argument():
     with pytest.raises(SystemExit):
         probe_word_info.main(["--api-url", "http://x/", "--token", "abc"])
+
+
+def test_light_verb_and_predicate_cases_carry_expectations():
+    by_name = {c["name"]: c for c in probe_word_info.CASES}
+    assert by_name["zur Verfügung stellen"]["expect"] == {
+        "separableVerb": None,
+        "expression.text": "zur Verfügung stellen",
+    }
+    assert by_name["target pl: klar"]["expect"] == {"expression": None}
+
+
+def test_check_expect_reads_dotted_paths_into_groups():
+    row = ok_row(["end_turn"], [400], expression={"text": "zur Verfügung stellen"})
+    assert probe_word_info.check_expect(row, {"expression.text": "zur Verfügung stellen"}) == []
+    assert probe_word_info.check_expect(row, {"expression.text": "x"}) == ["expression.text"]
+    none_row = ok_row(["end_turn"], [400])
+    assert probe_word_info.check_expect(none_row, {"expression.text": "x"}) == ["expression.text"]

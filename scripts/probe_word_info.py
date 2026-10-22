@@ -55,6 +55,7 @@ CASES: list[dict] = [
         "zur Verfügung stellen",
         "Die Stadt stellt uns den Saal zur Verfügung.",
         "Verfügung.",
+        expect={"separableVerb": None, "expression.text": "zur Verfügung stellen"},
     ),
     _case("Angst haben", "Ich habe große Angst vor Hunden.", "Angst"),
     _case("sich freuen auf", "Ich freue mich sehr auf den Urlaub.", "freue"),
@@ -109,7 +110,13 @@ CASES: list[dict] = [
         target="ru",
         expect={"lemma": "anrufen"},
     ),
-    _case("target pl: klar", "Das Wasser ist klar.", "klar.", target="pl"),
+    _case(
+        "target pl: klar",
+        "Das Wasser ist klar.",
+        "klar.",
+        target="pl",
+        expect={"expression": None},
+    ),
     _case(
         "target es: particle vor",
         "Sie stellte ihn ihrer Mutter vor.",
@@ -203,13 +210,23 @@ def summarize(rows: list[dict]) -> dict:
 
 
 def check_expect(row: dict, expect: dict | None) -> list[str]:
-    """Names of the expected top-level fields the row does not have (None means null)."""
+    """Names of the expected fields the row does not have (None means null).
+
+    A field may be a dotted path into a group, for example "expression.text".
+    """
     if not expect:
         return []
     if row.get("status") != 200:
         return ["(no answer)"]
     body = row.get("body") or {}
-    return [field for field, want in expect.items() if body.get(field) != want]
+    return [field for field, want in expect.items() if _lookup(body, field) != want]
+
+
+def _lookup(body: dict, path: str):
+    value = body
+    for part in path.split("."):
+        value = value.get(part) if isinstance(value, dict) else None
+    return value
 
 
 def summarize_by_target(rows: list[dict]) -> dict[str, dict]:
