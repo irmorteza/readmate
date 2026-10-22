@@ -62,6 +62,7 @@ export interface WordInfoResponse {
   plural: string | null;
   exampleDe: string;
   exampleEn: string;
+  exampleTranslation?: string;
   separableVerb: SeparableVerb | null;
   expression: Expression | null;
   meta: WordInfoMeta;
@@ -106,6 +107,7 @@ export function isWordInfoResponse(x: unknown, wordCount: number): x is WordInfo
   return (
     x.version === 1 &&
     [x.word, x.lemma, x.phonetic, x.translation, x.senseInContext, x.exampleDe, x.exampleEn].every(isString) &&
+    (x.exampleTranslation === undefined || isString(x.exampleTranslation)) &&
     POS.includes(x.pos) &&
     (x.article === null || ARTICLES.includes(x.article)) &&
     (x.plural === null || isString(x.plural)) &&
